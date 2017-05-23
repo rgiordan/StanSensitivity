@@ -5,13 +5,11 @@ rstan_options(auto_write = TRUE)
 # Set this to be the appropriate location of the repo on your computer.
 example_directory <- file.path(Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/example_models")
 
-
 # Choose the basename of a model that's already been generated.  For details on how to
 # generate a sensitivity model from an existing stan model, see the README in this repo.
 
-#model_name <- "sensitivity_generator/normal_censored/normal_censored"
-model_name <- "sensitivity_generator/negative_binomial/negative_binomial"
-
+#model_name <- file.path(example_directory, "normal_censored/normal_censored")
+model_name <- file.path(example_directory, "negative_binomial/negative_binomial")
 
 # Compile the base model.
 model <- stan_model(paste(model_name, "_generated.stan", sep=""))
@@ -69,11 +67,14 @@ sens_mat <- cov(grad_mat, draws_mat)
 rownames(sens_mat) <- sens_param_names
 
 
-print(result)
-print(sens_mat[!weight_rows, ])
+if (FALSE) {
+  # Wrapping in a comment block because your analysis may not have all these variables.
 
-# Plot the sensitivity against whatever data value seems relevant (it's not always y).
-weight_rows <- grepl("weights", sens_param_names)
-plot(stan_data$y, sens_mat[weight_rows, 1])
+  # Plot the sensitivity against whatever data value seems relevant (it's not always y).
+  weight_rows <- grepl("weights", sens_param_names)
+  plot(stan_data$y, sens_mat[weight_rows, 1])
 
+  print(result)
+  print(sens_mat[!weight_rows, ])
+}
 
