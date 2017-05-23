@@ -1,0 +1,5 @@
+for (n in 1:N_observed) {
+  target += weights[n] * (
+      normal_lpdf(y[n] | mu, y_var) - normal_lcdf(U | mu, y_var));
+  }
+target += N_censored * log1m(normal_cdf(U, mu, y_var));

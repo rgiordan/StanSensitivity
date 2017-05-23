@@ -1,0 +1,4 @@
+real U;
+int<lower=0> N_censored;
+int<lower=0> N_observed;
+real<upper=U> y[N_observed];

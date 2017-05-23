@@ -1,0 +1,2 @@
+real weights[N_observed];
+real y_var;
