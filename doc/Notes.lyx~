@@ -1,0 +1,898 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Frequentist properties of Bayesian estimates using local sensitivity
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\thetapost}[2][X][\theta]{P\left(#2\vert#1\right)}
+{P\left(#2\vert#1\right)}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\mbe}[2][P\left(\theta\vert X\right)][g\left(\theta\right)]{\mathbb{E}_{#1}\left[#2\right]}
+{\mathbb{E}_{#1}\left[#2\right]}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\cov}[2][P\left(\theta\vert X\right)][\,]{\mathrm{Cov}_{#1}\left(#2\right)}
+{\mathrm{Cov}_{#1}\left(#2\right)}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Problem statement
+\end_layout
+
+\begin_layout Standard
+Suppose we want to perform a Bayesian analysis on a dataset 
+\begin_inset Formula $X=\left(x_{1},...,x_{N}\right)$
+\end_inset
+
+, where each 
+\begin_inset Formula $x_{n}$
+\end_inset
+
+ is drawn independently given a particular value of the parameter vector,
+ 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ Suppose we have a likelihood 
+\begin_inset Formula $P\left(x_{n}\vert\theta\right)$
+\end_inset
+
+, and a prior 
+\begin_inset Formula $P\left(\theta\right)$
+\end_inset
+
+, which we assume is defined with respect to a measure 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ We are interested in the posterior expectation of a function, 
+\begin_inset Formula $g\left(\theta\right)$
+\end_inset
+
+, of the parameters:
+\begin_inset Formula 
+\begin{align*}
+P\left(\theta\vert X\right) & =\frac{P\left(X\vert\theta\right)P\left(\theta\right)}{P\left(X\right)}=\frac{P\left(\theta\right)\prod_{n=1}^{N}P\left(x_{n}\vert\theta\right)}{P\left(X\right)}\\
+\mbe & =\int P\left(\theta\vert X\right)g\left(\theta\right)\lambda\left(d\theta\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Suppose we are interested in the effect on 
+\begin_inset Formula $\mbe$
+\end_inset
+
+ of leaving out one or more of the data points, 
+\begin_inset Formula $x_{n}$
+\end_inset
+
+.
+ One way to express this is to define an auxiliary weight vector, 
+\begin_inset Formula $W=\left(w_{1},...,w_{N}\right)$
+\end_inset
+
+, where each 
+\begin_inset Formula $w_{n}\in\mathbb{R}$
+\end_inset
+
+, and 
+\begin_inset Formula 
+\begin{align*}
+P\left(X\vert\theta,W\right) & =\prod_{n=1}^{N}P\left(x_{n}\vert\theta\right)^{w_{n}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If we take 
+\begin_inset Formula $W=\left(1,...,1\right)=:1_{N}$
+\end_inset
+
+, that is, the vector of all 
+\begin_inset Formula $1$
+\end_inset
+
+ (which we call 
+\begin_inset Formula $1_{N}$
+\end_inset
+
+), then we recover the original posterior:
+\begin_inset Formula 
+\begin{align*}
+P\left(\theta\vert X\right) & =P\left(\theta\vert X,W=1_{N}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By setting 
+\begin_inset Formula $w_{n}$
+\end_inset
+
+ to zero, we effectively remove that data point.
+ Denote by 
+\begin_inset Formula $X_{-n}$
+\end_inset
+
+ the dataset 
+\begin_inset Formula $X$
+\end_inset
+
+ with 
+\begin_inset Formula $x_{n}$
+\end_inset
+
+ removed, and denote by 
+\begin_inset Formula $\delta_{n}$
+\end_inset
+
+ the vector that is all 
+\begin_inset Formula $0$
+\end_inset
+
+ except for the 
+\begin_inset Formula $n^{th}$
+\end_inset
+
+ entry.
+ Then
+\begin_inset Formula 
+\begin{align*}
+P\left(X\vert\theta,W=1_{N}-\delta_{n}\right) & =\prod_{n'\ne n}^{N}P\left(x_{n'}\vert\theta\right)\Rightarrow\\
+P\left(\theta\vert X_{-n}\right) & =P\left(\theta\vert X,W=1_{N}-\delta_{n}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will assume that we have access to 
+\begin_inset Formula $M$
+\end_inset
+
+ iid draws from the posterior, e.g.
+ from a perfectly converged Markov Chain, which we denote 
+\begin_inset Formula $\theta_{1},...,\theta_{m},...,\theta_{M}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Estimation from importance sampling
+\end_layout
+
+\begin_layout Standard
+We can estimate the effect of removing a datapoint directly by importance
+ sampling.
+ By definition, as long as 
+\begin_inset Formula $P\left(x_{n}\vert\theta\right)>0$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{align*}
+\mbe[P\left(\theta\vert X_{-n}\right)] & =\int g\left(\theta\right)\thetapost[X_{-n}]d\theta\\
+ & =\int g\left(\theta\right)\thetapost[X]\frac{\thetapost[X_{-n}]}{\thetapost[X]}d\theta\\
+\mbe & \approx\frac{1}{M}\sum_{m}g\left(\theta_{m}\right)\\
+\mbe[P\left(\theta\vert X_{-n}\right)] & \approx\frac{1}{M}\sum_{m}\omega_{nm}g\left(\theta_{m}\right)\\
+\omega_{nm} & :=\frac{\thetapost[X_{-n}]}{\thetapost[X]}=\frac{P\left(X\right)}{P\left(X_{-n}\right)}\frac{P\left(X_{-n}\vert\theta\right)}{P\left(X_{n}\vert\theta\right)}\\
+\frac{P\left(X_{-n}\vert\theta\right)}{P\left(X\vert\theta\right)} & =\exp\left(\sum_{n'\ne n}^{N}\log P\left(x_{n'}\vert\theta\right)-\sum_{n'=1}^{N}\log P\left(x_{n'}\vert\theta\right)\right)=\frac{1}{P\left(x_{n}\vert\theta\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The normalizing constants 
+\begin_inset Formula $P\left(X\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $P\left(X_{-n}\right)$
+\end_inset
+
+ are not known in general, but they are common to each 
+\begin_inset Formula $\omega_{m}$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula $\mbe[P\left(\theta\vert X\right)][\omega_{m}]=1$
+\end_inset
+
+, by the law of large numbers and the continuous mapping theorem we can
+ normalize the weights and maintain the approximation of the integral:
+\begin_inset Formula 
+\begin{align*}
+\bar{\omega}_{nm} & :=\frac{\omega_{nm}}{\sum_{m'=1}^{M}\omega_{nm'}}\\
+\mbe[P\left(\theta\vert X_{-n}\right)] & \approx\frac{1}{M}\sum_{m}\omega_{nm}g\left(\theta_{m}\right)\\
+ & =\frac{1}{M}\frac{\sum_{m'=1}^{M}\omega_{nm'}}{\sum_{m'=1}^{M}\omega_{nm'}}\sum_{m}\omega_{nm}g\left(\theta_{m}\right)\\
+ & =\frac{\sum_{m'=1}^{M}\omega_{nm'}}{M}\sum_{m}\bar{\omega}_{nm}g\left(\theta_{m}\right)\\
+ & \approx\sum_{m}\bar{\omega}_{nm}g\left(\theta_{m}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These can be easily calculated from the matrix of log probabilities
+\begin_inset Formula 
+\begin{align*}
+\ell_{n,m} & :=\log P\left(x_{n}\vert\theta_{m}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which give rise to a matrix of weights
+\begin_inset Formula 
+\begin{align*}
+\bar{\Omega}_{nm} & :=\bar{\omega}_{nm}.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Defining the matrix
+\begin_inset Formula 
+\begin{align*}
+G_{ml}: & =g_{l}\left(\theta_{m}\right),
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $g_{l}$
+\end_inset
+
+ is the 
+\begin_inset Formula $l^{th}$
+\end_inset
+
+ element of the vector 
+\begin_inset Formula $g$
+\end_inset
+
+, then the columns of 
+\begin_inset Formula $\bar{\Omega}G$
+\end_inset
+
+ give a jackknife estimate of the frequentist variance of 
+\begin_inset Formula $\mbe$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Estimation from covariances
+\end_layout
+
+\begin_layout Standard
+It follows by definition that the change in 
+\begin_inset Formula $\mbe$
+\end_inset
+
+ induced by deleting the 
+\begin_inset Formula $n^{th}$
+\end_inset
+
+ datapoint is
+\begin_inset Formula 
+\begin{align*}
+\mbe[P\left(\theta\vert X_{-n}\right)]-\mbe & =\left.\mbe[\thetapost[X,W]]\right|_{W=1_{N}}^{W=1_{N}-\delta_{n}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\mbe[P\left(\theta\vert X_{-n}\right)]-\mbe & =\left.\mbe[P\left(\theta\vert X,W\right)]\right|_{W=1_{N}}^{W=1_{N}-\delta_{n}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Assuming that each data point makes only a small contribution to the overall
+ estimate, then the dependence on 
+\begin_inset Formula $W$
+\end_inset
+
+ should be approximately linear, so that
+\begin_inset Formula 
+\begin{align*}
+\left.\mbe[P\left(\theta\vert X,W\right)]\right|_{W=1_{N}}^{W=1_{N}-\delta_{n}} & \approx\left.\frac{d\mbe[P\left(\theta\vert X,W\right)]}{dW^{T}}\right|_{W=1_{N}}\left(\left(1_{N}-\delta_{n}\right)-1_{N}\right)\\
+ & =-\left.\frac{d\mbe[P\left(\theta\vert X,W\right)]}{dW^{T}}\right|_{W=1_{N}}\delta_{n}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By exchanging integration and differentiation (our paper),
+\begin_inset Formula 
+\begin{align*}
+\frac{d\mbe[P\left(\theta\vert X,W\right)]}{dW^{T}} & =\cov[][g\left(\theta\right),\frac{\partial}{\partial W}\log P\left(X\vert\theta,W\right)]\\
+ & =\cov[][g\left(\theta\right),\left(\begin{array}{c}
+\log P\left(x_{1}\vert\theta\right)\\
+\vdots\\
+\log P\left(x_{N}\vert\theta\right)
+\end{array}\right)]\\
+ & =\cov[][g\left(\theta\right),\ell]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where as above, 
+\begin_inset Formula 
+\begin{align*}
+\ell_{n}\left(\theta\right) & :=\log P\left(x_{n}\vert\theta\right).
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can estimate this covariance from MCMC samples by
+\begin_inset Formula 
+\begin{align*}
+\cov[][\ell,g\left(\theta\right)] & \approx\frac{1}{M}\sum_{M}\ell\left(\theta_{m}\right)\left(g\left(\theta_{m}\right)-\bar{g}\right)\\
+ & =\frac{1}{M}L\bar{G}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where, similar to above,
+\begin_inset Formula 
+\begin{align*}
+\bar{G}_{ml} & =g_{l}\left(\theta_{m}\right)-\frac{1}{M}\sum_{m'}g_{l}\left(\theta_{m'}\right)\\
+L_{nm} & =\log P\left(x_{n}\vert\theta_{m}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since multiplication by 
+\begin_inset Formula $\delta_{n}^{T}$
+\end_inset
+
+ picks out the 
+\begin_inset Formula $n^{th}$
+\end_inset
+
+ row of a matrix, it follows that, as above, the rows of 
+\begin_inset Formula $L\bar{G}$
+\end_inset
+
+ are the estimated effects of removing data point 
+\begin_inset Formula $n$
+\end_inset
+
+.
+ That is, the rows of
+\begin_inset Formula 
+\begin{align*}
+\frac{1}{M}1_{N,M}G-L\bar{G} & \approx\bar{\Omega}G
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+are a jackknife estimate of the distribution of 
+\begin_inset Formula $\mbe$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula $\bar{G}=\left(I_{M,M}-\frac{1}{M}1_{M,M}\right)G$
+\end_inset
+
+, the product 
+\begin_inset Formula $L\bar{G}$
+\end_inset
+
+ can also be written as
+\begin_inset Formula 
+\begin{align*}
+L\bar{G} & =L\left(I_{m,m}-\frac{1}{M}1_{M,M}\right)G=\bar{L}G
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+...where 
+\begin_inset Formula $\bar{L}$
+\end_inset
+
+ has had its rows normalized.
+ (This is also just another way of writing the same sample covariance).
+ Putting this together,
+\begin_inset Formula 
+\begin{align*}
+\frac{d\mbe[P\left(\theta\vert X,W\right)]}{dW^{T}} & \approx G^{T}\bar{L}^{T}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This can be understood as a Taylor series approximation to 
+\begin_inset Formula $\bar{\Omega}G$
+\end_inset
+
+ since
+\begin_inset Formula 
+\begin{align*}
+\bar{\omega}_{nm} & =\frac{\omega_{nm}}{\sum_{m'}\omega_{nm'}}\\
+ & =\exp\left(\log P\left(x_{n}\vert\theta_{m}\right)^{-1}-\log\sum_{m'}P\left(x_{n}\vert\theta_{m}\right)^{-1}\right)\\
+ & =\exp\left(-\log P\left(x_{n}\vert\theta_{m}\right)+\frac{1}{M}\sum_{m'}\log P\left(x_{n}\vert\theta_{m'}\right)-\frac{1}{M}\sum_{m'}\log P\left(x_{n}\vert\theta_{m'}\right)-\log\frac{1}{M}\sum_{m'}P\left(x_{n}\vert\theta_{m'}\right)^{-1}-\log M\right)\\
+ & \approx\frac{1}{M}\exp\left(-\left(\log P\left(x_{n}\vert\theta_{m}\right)-\frac{1}{M}\sum_{m'}\log P\left(x_{n}\vert\theta_{m'}\right)\right)\right)\\
+ & \approx\frac{1}{M}\left(1-\left(\log P\left(x_{n}\vert\theta_{m}\right)-\frac{1}{M}\sum_{m'}\log P\left(x_{n}\vert\theta_{m'}\right)\right)\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+under the assumption that 
+\begin_inset Formula $\omega_{nm}=P\left(x_{n}\vert\theta_{m}\right)^{-1}$
+\end_inset
+
+ is not very variable in 
+\begin_inset Formula $m$
+\end_inset
+
+ so that we can exchange the logarithm and expectation.
+\end_layout
+
+\begin_layout Section
+Applications
+\end_layout
+
+\begin_layout Standard
+If we are happy with jackknife estimates of variance, then there may be
+ no particular reason to go further than importance sampling.
+ However, for bootstrapping, each bootstrap sample requires the exponentiation
+ and normalization of the 
+\begin_inset Formula $\ell$
+\end_inset
+
+ matrix to construct the 
+\begin_inset Formula $\bar{\Omega}$
+\end_inset
+
+, which may be large.
+ For that reason, perhaps it would be preferable to work with the 
+\begin_inset Formula $L$
+\end_inset
+
+ matrix under the assumption of linearity.
+ To be fair, it's not clear to me now which will usually be better in practice.
+\end_layout
+
+\begin_layout Subsection
+Bootstrap
+\end_layout
+
+\begin_layout Standard
+A bootstrap sample of the data can be represented by drawing a weight vector
+\begin_inset Formula 
+\[
+W_{b}\sim\textrm{Multinomial}\left(N,\frac{1}{N}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Under these weights and the assumption of linearity,
+\begin_inset Formula 
+\begin{align*}
+\mbe[P\left(\theta\vert X,W_{b}\right)] & \approx\left.\frac{d\mbe[P\left(\theta\vert X,W\right)]}{dW^{T}}\right|_{W=1_{N}}\left(W_{b}-1_{N}\right)+\mbe[P\left(\theta\vert X\right)]\\
+ & \approx G^{T}\bar{L}^{T}\left(W_{b}-1_{N}\right)+\mbe[P\left(\theta\vert X\right)]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This can be quickly calculated from 
+\begin_inset Formula $\bar{L}$
+\end_inset
+
+ using only matrix multiplication.
+ (The vector is also likely to be fairly sparse since many elements of 
+\begin_inset Formula $W_{b}$
+\end_inset
+
+ will be 
+\begin_inset Formula $1$
+\end_inset
+
+.)
+\end_layout
+
+\begin_layout Subsection
+Cross validation
+\end_layout
+
+\begin_layout Standard
+At the risk of getting away from the assumptions of linearity, a random
+ subsample of the data can be selected for cross validation.
+ Let
+\begin_inset Formula 
+\begin{align*}
+W_{cv,n} & \stackrel{iid}{\sim}\textrm{Bernoulli}\left(p_{cv}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $p_{cv}$
+\end_inset
+
+ is a proportion of samples that you wish to be held out for cross validation.
+ Then let 
+\begin_inset Formula $g\left(\theta\right)$
+\end_inset
+
+ be the posterior predictive value, i.e.
+\begin_inset Formula 
+\begin{align*}
+g\left(\theta\right) & =\mbe[][x_{new}]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $x_{new}$
+\end_inset
+
+ is a new data point drawn from 
+\begin_inset Formula $P\left(\theta\vert X\right)$
+\end_inset
+
+.
+ Let 
+\begin_inset Formula 
+\begin{align*}
+X_{ho} & :=\left\{ X_{n}:w_{cv,n}=1\right\} \\
+X_{cv} & :=\left\{ X_{n}:w_{cv,n}=0\right\} 
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Quotes eld
+\end_inset
+
+ho
+\begin_inset Quotes erd
+\end_inset
+
+ is for 
+\begin_inset Quotes eld
+\end_inset
+
+held out
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+cv
+\begin_inset Quotes erd
+\end_inset
+
+ is for cross validation.
+ Then the average squared predicted error on the held out dataset is given
+ by
+\begin_inset Formula 
+\begin{align*}
+MSE_{cv}= & \frac{1}{N_{ho}}\left(x_{ho,n}-\mbe[P\left(\theta\vert X_{cv}\right)][x_{new}]\right)^{2}\\
+\mbe[P\left(\theta\vert X_{cv}\right)][x_{new}] & \approx G^{T}\bar{L}^{T}\left(\left(1_{N}-W_{cv,n}\right)-1_{N}\right)+\mbe[P\left(\theta\vert X\right)][x_{new}]\\
+ & =-G^{T}\bar{L}^{T}W_{cv,n}+\mbe[P\left(\theta\vert X\right)][x_{new}]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Again, the matrix multiplication need only be calculated on the relatively
+ few non-zero entries of 
+\begin_inset Formula $W_{cv,n}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Validation of the posterior approximation
+\end_layout
+
+\begin_layout Standard
+This section is a bit more speculative.
+\end_layout
+
+\begin_layout Standard
+In many practical cases, the frequentist variance of a Bayesian posterior
+ expectation is similar to the posterior variance of the parameter (see,
+ e.g., Frequentist accuracy of Bayesian estimates, Bradley Efron, though there
+ is quite a lot more written about this much of which I haven't read).
+ Given this, take 
+\begin_inset Formula $g\left(\theta\right)=\theta$
+\end_inset
+
+ and suppose we have a large number of bootstrap samples
+\begin_inset Formula 
+\begin{align*}
+\mbe[P\left(\theta\vert X_{b}\right)][\theta_{b}] & =:t_{b}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The quantity 
+\begin_inset Formula $t_{b}$
+\end_inset
+
+ is a fixed number that varies with datasets for a fixed 
+\begin_inset Formula $\theta$
+\end_inset
+
+, i.e.
+ in a frequentist way.
+ If our data came from 
+\begin_inset Formula $\theta_{0}$
+\end_inset
+
+, then 
+\begin_inset Formula $t_{b}$
+\end_inset
+
+ follows the distribution induced by 
+\begin_inset Formula $P\left(X_{b}\vert\theta_{0}\right)$
+\end_inset
+
+.
+ If the frequentist distribution approximates the posterior, then we might
+ hope that
+\begin_inset Formula 
+\begin{align*}
+P\left(t_{b}\right) & \approx P\left(\theta\vert X\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that both 
+\begin_inset Formula $t_{b}$
+\end_inset
+
+ and the Bayesian quantity 
+\begin_inset Formula $\theta$
+\end_inset
+
+ take values in the same measurable space.
+ If we knew 
+\begin_inset Formula $\theta_{0}$
+\end_inset
+
+, then we might hope to use 
+\begin_inset Formula $t_{b}$
+\end_inset
+
+ to form an importance-weighted estimate of the posterior:
+\begin_inset Formula 
+\begin{align*}
+\mbe[][\theta] & \approx\frac{1}{B}\sum_{b}\omega_{b}t_{b}\\
+\omega_{b} & =\frac{P\left(\theta=t_{b}\vert X\right)}{P\left(\mbe[P\left(\theta\vert X_{b}\right)][\theta]=t_{b}\vert\theta_{0}\right)}\\
+P\left(\theta=t_{b}\vert X\right) & \propto P\left(X\vert\theta=t_{b}\right)P\left(\theta=t_{b}\right)\\
+P\left(\mbe[P\left(\theta\vert X_{b}\right)][\theta]=t_{b}\vert\theta_{0}\right) & =\int P\left(\mbe[P\left(\theta\vert X_{b}\right)][\theta]=t_{b}\vert X_{b}\right)P\left(X_{b}\vert\theta_{0}\right)dX_{b}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is easy to calculate a value proportional to the numerator of 
+\begin_inset Formula $\omega_{b}$
+\end_inset
+
+ (the constant of proportionality can be removed by normalizing as above),
+ but the denominator is trickier, and it depends on the unknown 
+\begin_inset Formula $\theta_{0}$
+\end_inset
+
+.
+ However, a core assumption of the non-parametric bootstrap is that the
+ true distribution is well-approximated by the empirical distribution on
+ the bootstrap samples.
+ This can perhaps justify giving each bootstrap sample equal weight.
+ However, I think I need to think more about this.
+\end_layout
+
+\begin_layout Standard
+If it works, this technique could potentially be used either to check for
+ the convergence of Markov Chains or to check the quality of a variational
+ approximation.
+ These would be valuable tools.
+\end_layout
+
+\end_body
+\end_document
