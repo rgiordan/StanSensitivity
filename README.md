@@ -7,35 +7,60 @@ to automatically generate local sensitivity measures to hyperparameters in
 A Stan model's data block typically consists of both data and hyperparameters.
 Local sensitivity of a posterior mean to the hyperparameters can be
 computed as the posterior covariance of a log derivative with with parameter[1].
-  These tools allow you to
+These tools allow you to
 easily specify which hyperparameters you're intersted in and automatically
 calculate the necessary local sensitivity.
 
 Here are the current steps to use it.  Some examples can be found in
 ```example_models```, which are based on their namesakes in the
 [Stan examples](https://github.com/stan-dev/example-models).
-1. Start with an existing Stan model and dataset containing hyperparameters (e.g. ```example_models/negative_binomial/negative_binomial.stan``` and ```example_models/negative_binomial.data.R```).
-2. Break your model up into chunks using ```python/split_model.py```.  You'll need to
-specify the "base name", which is everything in your stan model file except the
-extension.  This base name will be used to generate derived scripts for calculating
-sensitivity.
+1. Start with an existing Stan model and dataset containing hyperparameters (e.g. ```example_models/negative_binomial/negative_binomial_original.stan``` and ```example_models/negative_binomial.data.R```).
+2. Split your ```data``` block into a data block containing parameters that
+you want to keep fixed and a new ```hyperparameters``` block containing the
+parameters whose sensitivity you want to evaluate.  For example, the original
+data block in ```negative_binomial_original.stan``` was:
 ```
-python/split_model.py --model_name=example_models/negative_binomial/negative_binomial
+data {
+    int<lower=1> N;
+    int<lower=0> y[N];
+    real weights[N];
+    real cauchy_loc_alpha;
+    real cauchy_loc_beta;
+    real cauchy_scale_alpha;
+    real cauchy_scale_beta;
+}
 ```
-3. This will make a bunch of ```*.stanblock``` files.  You'll need to manually
-edit two of them to specify your hyperparameters.  Look in the file ```BASENAME_data_block.stanblock```.  You'll see the contents of your original
-datablock, including both data and hyperparameters.  Move (don't copy) the
-hyperparameters to the file ```BASENAME_hyperparameters_block.stanblock```.
-For example, I moved the parameters ```cauchy_*``` and ```weights```
-from the data block to the hyperparameters block in the negative binomial model.
-4. Ren ```generate_models.py``` using the same syntax as above:
+and in ```negative_binomial.stan``` this is split into
 ```
-python/generate_models.py --model_name=example_models/negative_binomial/negative_binomial
+data {
+    int<lower=1> N;
+    int<lower=0> y[N];
+}
+hyperparameters {
+    real weights[N];
+    real cauchy_loc_alpha;
+    real cauchy_loc_beta;
+    real cauchy_scale_alpha;
+    real cauchy_scale_beta;
+}
 ```
+**Note: hyperparameters must be real-valued and unconstrained.**  There are
+currently no checks for this -- the sensitivity analysis will simply crash
+or not make sense!  (If there are constraints, it will silently report
+sensitivity to the unconstrained value, not the constrained value.)
+3. Run ```generate_models.py``` pointing to the script with the
+```hyperparameters``` block defined:
+```
+python/generate_models.py --base_model=example_models/negative_binomial/negative_binomial
+```
+This will produce two new models with the suffixes ```_generated.stan``` and
+```_sensitivity.stan```.   The former should be the same as your original
+model, and the latter will give you the necessary derivatives for sensitivity
+analysis.
 5. Run the R script ```R/run_examples.R```, setting the ```model_name``` variable
-to the value of the Python ```--model_name``` flag, e.g.
+to the name of your original model without the ```.stan``` suffix, e.g.
 ```
-model_name <- "example_models/negative_binomial//negative_binomial"
+model_name <- "example_models/negative_binomial/negative_binomial"
 ```
 6. Hopefully, if everything works, you will have your local sensitivity measures
 in the matrix ```sens_mat```, which you can graph or interpret as you see fit.
