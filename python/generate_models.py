@@ -1,90 +1,110 @@
 #!/usr/bin/python
 
 import argparse
+from collections import OrderedDict
 import os
+import re
 
 parser = argparse.ArgumentParser(
     description='Generate stan models for sensitivity analysis.')
-parser.add_argument('--model_name', help='Directory and base filename for stan scripts.')
+parser.add_argument('--base_model',
+                    help='Directory and base filename for stan scripts.')
 
-
-class StanBlocks(object):
-    def __init__(self, model_name):
-        # TODO: add tabs if they're not there.
-        f = open(model_name + '_data_block.stanblock', 'r')
-        self.data_block = f.read()
-        f.close()
-
-        f = open(model_name + '_model_block.stanblock', 'r')
-        self.model_block = f.read()
-        f.close()
-
-        f = open(model_name + '_parameters_block.stanblock', 'r')
-        self.parameters_block = f.read()
-        f.close()
-
-        f = open(model_name + '_hyperparameters_block.stanblock', 'r')
-        self.hyperparameters_block = f.read()
-        f.close()
-
-        extra_blocks_fname = model_name + '_extra_blocks.stanblock'
-        if os.path.isfile(extra_blocks_fname):
-            f = open(extra_blocks_fname, 'r')
-            self.extra_blocks = f.read()
-            f.close()
+def parse_model_blocks(script):
+    # Parse the script into blocks.
+    contents = OrderedDict()
+    last_i = 0
+    in_block = False
+    for i in range(len(script)):
+        if in_block:
+            if script[i] == '{':
+                num_parens += 1
+            elif script[i] == '}':
+                num_parens -= 1
+            if num_parens == 0:
+                # ...then we have closed the opening block bracket.
+                block = script[last_i:i]
+                last_i = i + 1
+                in_block = False
+                contents[tag] = block
         else:
-            self.extra_blocks = ''
+            if script[i] == '{':
+                # ...then we have found the opening bracked of a stan block.
+                in_block = True
+                tag = script[last_i:i].strip()
+                last_i = i + 1
+                num_parens = 1
+
+    return contents
 
 
-def write_base_script(model_name, blocks):
-    f = open(os.path.join(model_name + '_generated.stan'), 'w')
+def generate_base_script(contents):
+    script = []
+    for k, v in contents.iteritems():
+        if k == 'hyperparameters':
+            continue
+        if k == 'data':
+            script.append('data {')
+            script.append(contents['data'])
+            script.append('\n  // Hyperparameters:')
+            script.append(contents['hyperparameters'])
+            script.append('}\n')
+        else:
+            script.append('{} {{'.format(k))
+            script.append(v)
+            script.append('}\n')
 
-    f.write('data {\n')
-    f.write(blocks.data_block)
-    f.write(blocks.hyperparameters_block)
-    f.write('\n}\n')
-
-    f.write('parameters {\n')
-    f.write(blocks.parameters_block)
-    f.write('\n}\n')
-
-    f.write('model {\n')
-    f.write(blocks.model_block)
-    f.write('\n}\n')
-
-    f.write(blocks.extra_blocks)
-    f.write('\n')
-
-    f.close()
+    script.append('\n')
+    return ''.join(script)
 
 
+def generate_sensitivity_script(contents):
+    script = []
+    for k, v in contents.iteritems():
+        if k == 'hyperparameters':
+            continue
+        if k == 'parameters':
+            script.append('parameters {')
+            script.append(contents['parameters'])
 
-def write_sensitivity_script(model_name, blocks):
-    f = open(os.path.join(model_name + '_sensitivity.stan'), 'w')
+            # TODO: script the constraints.
+            script.append('\n  // Hyperparameters:')
+            script.append(contents['hyperparameters'])
+            script.append('}\n')
 
-    f.write('data {\n')
-    f.write(blocks.data_block)
-    f.write('\n}\n')
+        else:
+            script.append('{} {{'.format(k))
+            script.append(v)
+            script.append('}\n')
 
-    f.write('parameters {\n')
-    f.write(blocks.parameters_block)
-    # TODO: make sure to strip constraints out of the hyperparameter block
-    # in the sensitivity script.
-    f.write(blocks.hyperparameters_block)
-    f.write('\n}\n')
+    script.append('\n')
+    return ''.join(script)
 
-    f.write('model {\n')
-    f.write(blocks.model_block)
-    f.write('\n}\n')
 
-    f.write(blocks.extra_blocks)
-    f.write('\n')
-
-    f.close()
+def check_contents(contents):
+    for block in [ 'data', 'parameters', 'hyperparameters' ]:
+        if not block in contents:
+            raise ValueError('The model is missing a {} block.'.format(block))
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    blocks = StanBlocks(args.model_name)
-    write_base_script(args.model_name, blocks)
-    write_sensitivity_script(args.model_name, blocks)
+    if args.base_model[-5:] != '.stan':
+        raise ValueError('The base model file must have the suffix .stan')
+
+    f = open(args.base_model, 'r')
+    script = f.read()
+    f.close()
+
+    model_name = re.sub('\.stan$', '', args.base_model)
+
+    contents = parse_model_blocks(script)
+    check_contents(contents)
+
+    f = open(os.path.join(model_name + '_generated.stan'), 'w')
+    f.write(generate_base_script(contents))
+    f.close()
+
+    f = open(os.path.join(model_name + '_sensitivity.stan'), 'w')
+    f.write(generate_sensitivity_script(contents))
+    f.close()
