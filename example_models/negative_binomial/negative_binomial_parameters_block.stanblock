@@ -1,3 +1,0 @@
-
-  real<lower=0> alpha;
-  real<lower=0> beta;

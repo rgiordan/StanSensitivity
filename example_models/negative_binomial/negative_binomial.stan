@@ -1,6 +1,8 @@
 data {
   int<lower=1> N;
   int<lower=0> y[N];
+}
+hyperparameters {
   real weights[N];
   real cauchy_loc_alpha;
   real cauchy_loc_beta;

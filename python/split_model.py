@@ -9,16 +9,7 @@ parser = argparse.ArgumentParser(
     description='Generate stan models for sensitivity analysis.')
 parser.add_argument('--model_name', help='A model name to split up.')
 
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-    # Make a backup copy.
-    #copyfile(args.model_name + '.stan', args.model_name + '_original.stan')
-    f = open(args.model_name + '.stan', 'r')
-    script = f.read()
-    f.close()
-
+def parse_model_blocks(script):
     # Parse the script into blocks.
     contents = {}
     last_i = 0
@@ -32,8 +23,6 @@ if __name__ == "__main__":
             if num_parens == 0:
                 # ...then we have closed the opening block bracket.
                 block = script[last_i:i]
-                #print 'Got block: '
-                #print block
                 last_i = i + 1
                 in_block = False
                 contents[tag] = block
@@ -42,11 +31,21 @@ if __name__ == "__main__":
                 # ...then we have found the opening bracked of a stan block.
                 in_block = True
                 tag = script[last_i:i].strip()
-                #print 'Got tag: '
-                #print tag
                 last_i = i + 1
                 num_parens = 1
 
+    return contents
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    # Make a backup copy.
+    #copyfile(args.model_name + '.stan', args.model_name + '_original.stan')
+    f = open(args.model_name + '.stan', 'r')
+    script = f.read()
+    f.close()
+
+    contents = parse_model_blocks(script)
 
     # Write the blocks individually.
     assert 'data' in contents

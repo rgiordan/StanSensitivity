@@ -1,5 +1,0 @@
-
-  alpha ~ cauchy(cauchy_loc_alpha, cauchy_scale_alpha);
-  beta ~ cauchy(cauchy_loc_beta, cauchy_scale_beta);
-  for (i in 1:N)
-    target += weights[i] * neg_binomial_lpmf(y[i] | alpha, beta);

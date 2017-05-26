@@ -1,5 +1,0 @@
-    real weights[N];
-    real cauchy_loc_alpha;
-    real cauchy_loc_beta;
-    real cauchy_scale_alpha;
-    real cauchy_scale_beta;
