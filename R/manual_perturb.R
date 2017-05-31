@@ -5,22 +5,24 @@ GetPosteriorMeans <- function(stan_data) {
   return(summary(result)$summary[,"mean"])
 }
 
-
-epsilon <- 1e-3
-weight_rows <- grepl("weights", sens_param_names)
-weight_param_names <- sens_param_names[weight_rows]
+hyperparam_rows <- !grepl("weights", rownames(sens_mat))
+hyperparam_names <- rownames(sens_mat)[param_rows]
 param_means <- summary(result)$summary[, "mean"]
 
-pert_mat <- matrix(NA, sum(weight_rows), ncol(sens_mat))
-rownames(pert_mat) <- weight_param_names
+pert_mat <- matrix(NA, length(hyperparam_names), ncol(sens_mat))
+rownames(pert_mat) <- hyperparam_names
 colnames(pert_mat) <- colnames(sens_mat)
+param_names <- setdiff(colnames(pert_mat), "lp__")
 
-for (wi in 1:length(weight_param_names)) {
+# Set the perturbation well outside the standard error range.
+epsilon <- 10 * min(summary(result)$summary[param_names, "se_mean"])
+
+for (i in 1:length(hyperparam_names)) {
+  hp_name <- hyperparam_names[i]
   stan_data_perturb <- stan_data
-  stan_data_perturb$weights[wi] <- stan_data_perturb$weights[wi] + epsilon
-  pert_mat[wi, ] <- GetPosteriorMeans(stan_data_perturb) - param_means
+  stan_data_perturb[[hp_name]] <- stan_data_perturb[[hp_name]]  + epsilon
+  pert_mat[i, ] <- GetPosteriorMeans(stan_data_perturb) - param_means
 }
 
-pert_mat
-sens_mat[weight_param_names, ] * epsilon
-summary(result)$summary
+pert_mat[, param_names]
+sens_mat[hyperparam_names, param_names] * epsilon
