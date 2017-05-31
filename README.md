@@ -51,16 +51,16 @@ sensitivity to the unconstrained value, not the constrained value.)
 3. Run ```generate_models.py``` pointing to the script with the
 ```hyperparameters``` block defined:
 ```
-python/generate_models.py --base_model=example_models/negative_binomial/negative_binomial
+python/generate_models.py --base_model=example_models/negative_binomial/negative_binomial.stan
 ```
 This will produce two new models with the suffixes ```_generated.stan``` and
 ```_sensitivity.stan```.   The former should be the same as your original
 model, and the latter will give you the necessary derivatives for sensitivity
 analysis.
 5. Run the R script ```R/run_examples.R```, setting the ```model_name``` variable
-to the name of your original model without the ```.stan``` suffix, e.g.
+to the full path of your original model without the ```.stan``` suffix, e.g.
 ```
-model_name <- "example_models/negative_binomial/negative_binomial"
+model_name <- file.path(example_directory, "negative_binomial/negative_binomial")
 ```
 6. Hopefully, if everything works, you will have your local sensitivity measures
 in the matrix ```sens_mat```, which you can graph or interpret as you see fit.

@@ -66,6 +66,9 @@ draws_mat <- extract(result, permute=FALSE)[,1,]
 sens_mat <- cov(grad_mat, draws_mat)
 rownames(sens_mat) <- sens_param_names
 
+# Stan takes gradients with respect to everything in the parameters block, not just the hyperparameters.
+# Remove the rows not corresponding to hyperparameters.
+sens_mat <- sens_mat[setdiff(sens_param_names, param_names), ]
 
 if (FALSE) {
   # Wrapping in a comment block because your analysis may not have all these variables.
