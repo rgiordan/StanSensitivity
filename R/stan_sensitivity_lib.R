@@ -36,6 +36,7 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
   # Get the model gradients with respect to the hyperparameters (and parameters).
   num_samples <- nrow(draws_mat)
   grad_mat <- matrix(NA, num_samples, length(sens_param_names))
+  lp_vec <- rep(NA, num_samples)
   cat("Evaluating log gradients at the MCMC draws.\n")
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
@@ -48,7 +49,9 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
       sens_par_list[[par]] <- as.numeric(par_list[[par]])
     }
     pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
-    grad_mat[n, ] <- grad_log_prob(model_sens_fit, pars_free)
+    glp <- grad_log_prob(model_sens_fit, pars_free)
+    grad_mat[n, ] <- glp
+    lp_vec[n] <- attr(glp, "log_prob")
   }
   close(prog_bar)
 
@@ -60,6 +63,6 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
   # not just the hyperparameters.  Remove the rows not corresponding to hyperparameters.
   sens_mat <- sens_mat[setdiff(sens_param_names, param_names), ]
 
-  return(list(sens_mat=sens_mat, grad_mat=grad_mat))
+  return(list(sens_mat=sens_mat, grad_mat=grad_mat, lp_vec=lp_vec))
 }
 

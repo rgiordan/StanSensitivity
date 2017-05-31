@@ -19,23 +19,27 @@ model <- stan_model(paste(model_name, "_generated.stan", sep=""))
 # Load the data and hyperparameters.
 stan_data <- new.env()
 source(paste(model_name, "data.R", sep="."), local=stan_data)
+stan_data <- as.list(stan_data)
 
 # Get the posterior draws.
 # Use chains=1 for now to avoid confusion around get_inits.  The script currently assumes
 # the same number of warm-up draws as final samples.
-num_samples <- 1000
+num_samples <- 10000
 result <- sampling(model, data=stan_data, chains=1, iter=num_samples * 2)
-print(result)
+print(summary(result))
 draws_mat <- extract(result, permute=FALSE)[,1,]
 
 stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
-sens_mat <- GetStanSensitivityFromModelFit(draws_mat, stan_sensitivity_list)$sens_mat
+sens_result <- GetStanSensitivityFromModelFit(draws_mat, stan_sensitivity_list)
+sens_mat <- sens_result$sens_mat
+
 
 if (FALSE) {
+  # Inspect the results.
   # Wrapping in a comment block because your analysis may not have all these variables.
 
   # Plot the sensitivity against whatever data value seems relevant (it's not always y).
-  weight_rows <- grepl("weights", sens_param_names)
+  weight_rows <- grepl("weights", rownames(sens_mat))
   plot(stan_data$y, sens_mat[weight_rows, 1])
 
   print(result)
