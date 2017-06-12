@@ -27,16 +27,16 @@ stan_data <- as.list(stan_data)
 # The script currently assumes the same number of warm-up draws as final samples.
 num_warmup_samples <- 5000
 num_samples <- 5000
-result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
-print(summary(result))
+sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+print(summary(sampling_result))
 
 ##################################
 # Get the sensitivity model and sensitivity.
 
-draws_mat <- extract(result, permute=FALSE)[,1,]
-stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
+draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
 sens_result <- GetStanSensitivityFromModelFit(
-  draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
+  sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
 
 
 ##################################
@@ -50,7 +50,7 @@ weight_rows <- grepl("weights", rownames(sens_mat))
 plot(stan_data$y, sens_mat_normalized[weight_rows, 1])
 
 # Look at the sensitivity to other hyperparameters.
-print(result)
+print(sampling_result)
 print(sens_mat[!weight_rows, , drop=FALSE])
 print(sens_mat_normalized[!weight_rows, , drop=FALSE])
 

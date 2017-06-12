@@ -10,15 +10,16 @@ GenerateTestModels <- function() {
     real y;
   }
   hyperparameters {
-  real prior_mean;
+    real prior_mean;
   }
   parameters {
-  real mu;
+    real mu;
   }
   model {
-  mu ~ normal(prior_mean, 1.0);
-  y ~ normal(mu, 1.0);
+    mu ~ normal(prior_mean, 1.0);
+    y ~ normal(mu, 1.0);
   }
+
   "
 
   base_model_generated <- "
@@ -26,31 +27,33 @@ GenerateTestModels <- function() {
   real y;
 
   // Hyperparameters:
-  real prior_mean;
+    real prior_mean;
   }
   parameters {
-  real mu;
+    real mu;
   }
   model {
-  mu ~ normal(prior_mean, 1.0);
-  y ~ normal(mu, 1.0);
+    mu ~ normal(prior_mean, 1.0);
+    y ~ normal(mu, 1.0);
   }
+
   "
 
   base_model_sensitivity <- "
   data {
-  real y;
+    real y;
   }
   parameters {
-  real mu;
+    real mu;
 
   // Hyperparameters:
-  real prior_mean;
+    real prior_mean;
   }
   model {
-  mu ~ normal(prior_mean, 1.0);
-  y ~ normal(mu, 1.0);
+    mu ~ normal(prior_mean, 1.0);
+    y ~ normal(mu, 1.0);
   }
+
   "
 
   # To generate the above scripts automatically:
@@ -79,11 +82,15 @@ GenerateTestModels <- function() {
   data_file <- file(paste(model_name, "data.R", sep="."), "w")
   cat(data_text, file=data_file)
   close(data_file)
+
+  return(model_name)
 }
 
 
-test_check("conjugate_model", {
-  GenerateTestModels()
+test_that("conjugate_model_works", {
+  test_dir <- getwd()
+  #model_name <- GenerateTestModels()
+  model_name <- file.path(test_dir, "/test_models/rstansensitivity_test")
 
   model <- stan_model(paste(model_name, "_generated.stan", sep=""))
 
@@ -110,9 +117,9 @@ test_check("conjugate_model", {
   expect_equal(post_sd, sd(draws_mat[, "mu"]), tolerance=3 * post_se)
 
   # Check the sensitivity.
-  stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
+  stan_sensitivity_list <- GetStanSensitivityModel(result, model_name, stan_data)
   sens_result <- GetStanSensitivityFromModelFit(
-    draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
+    result, draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
   sens_mat <- sens_result$sens_mat
   sens_mat_normalized <- sens_result$sens_mat_normalized
 

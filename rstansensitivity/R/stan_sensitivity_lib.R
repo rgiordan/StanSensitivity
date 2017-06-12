@@ -15,7 +15,7 @@ GenerateSensitivityFromModel <- function(
 
 
 # Compile the sensitivity model and get a stanfit object and related information.
-GetStanSensitivityModel <- function(model_name, stan_data) {
+GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
   model_sens <- stan_model(paste(model_name, "_sensitivity.stan", sep=""))
   model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
                          data=stan_data, algorithm="Fixed_param",
@@ -32,7 +32,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
   # These names help sort through the vectors of sensitivity.
   param_names <-
-    result@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+    sampling_result@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
   sens_param_names <-
     model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
 
@@ -45,7 +45,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
 # Process the results of GetStanSensitivityModel into a sensitivity matrix.
 GetStanSensitivityFromModelFit <- function(
-    draws_mat, stan_sensitivity_list, num_warmup_samples=nrow(draws_mat)) {
+    sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples=nrow(draws_mat)) {
 
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   param_names <- stan_sensitivity_list$param_names
@@ -60,7 +60,7 @@ GetStanSensitivityFromModelFit <- function(
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
     setTxtProgressBar(prog_bar, value=n)
-    par_list <- get_inits(result, iter=n + num_warmup_samples)[[1]]
+    par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
     for (par in ls(par_list)) {
       # Note that get_inits is currently broken:
       # https://github.com/stan-dev/rstan/issues/417
