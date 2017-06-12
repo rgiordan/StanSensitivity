@@ -3,6 +3,7 @@ library(rstansensitivity)
 library(rstan)
 rstan_options(auto_write=TRUE)
 
+context("rstansensitivity")
 
 GenerateTestModels <- function() {
   base_model <- "
