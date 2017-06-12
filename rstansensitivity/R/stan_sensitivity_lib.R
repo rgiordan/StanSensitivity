@@ -1,5 +1,19 @@
 library(rstan)
 
+
+GenerateSensitivityFromModel <- function(
+        base_model_name,
+        python_script="StanSensitivity/python/generate_models.py") {
+
+    model_suffix <-
+        substr(base_model_name, nchar(base_model_name) - 4, nchar(base_model_name))
+    stopifnot(model_suffix == ".stan", "The base model must end in .stan.")
+    system(paste(python_script, " --base_model=", base_model_name, sep=""))
+    model_name <- sub("\\.stan$", "", base_model_name)
+    return(model_name)
+}
+
+
 # Compile the sensitivity model and get a stanfit object and related information.
 GetStanSensitivityModel <- function(model_name, stan_data) {
   model_sens <- stan_model(paste(model_name, "_sensitivity.stan", sep=""))
@@ -16,8 +30,9 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
   }
 
   # These names help sort through the vectors of sensitivity.
-  param_names <- result@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-  sens_param_names <- model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+  stan_fit_instance <- result@.MISC$stan_fit_instance
+  param_names <- stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+  sens_param_names <- stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
 
   return(list(model_sens_fit=model_sens_fit,
               param_names=param_names,
@@ -60,9 +75,9 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
   rownames(sens_mat) <- sens_param_names
 
   # Stan takes gradients with respect to everything in the parameters block,
-  # not just the hyperparameters.  Remove the rows not corresponding to hyperparameters.
+  # not just the hyperparameters.  Remove the rows not corresponding to
+  # hyperparameters.
   sens_mat <- sens_mat[setdiff(sens_param_names, param_names), ]
 
   return(list(sens_mat=sens_mat, grad_mat=grad_mat, lp_vec=lp_vec))
 }
-

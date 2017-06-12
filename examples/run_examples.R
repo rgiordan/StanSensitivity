@@ -7,6 +7,10 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
+base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
+python_script <- file.path(Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/python/generate_models.py")
+model_name <- GenerateSensitivityFromModel(base_model_name, python_script=python_script)
+
 # Choose the basename of a model that's already been generated.  For details on how to
 # generate a sensitivity model from an existing stan model, see the README in this repo.
 

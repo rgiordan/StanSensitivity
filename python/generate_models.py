@@ -7,7 +7,7 @@ import re
 
 parser = argparse.ArgumentParser(
     description='Generate stan models for sensitivity analysis.')
-parser.add_argument('--base_model',
+parser.add_argument('--base_model', required=True,
                     help='Directory and base filename for stan scripts.')
 
 def parse_model_blocks(script):
