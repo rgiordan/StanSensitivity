@@ -7,7 +7,7 @@ GenerateSensitivityFromModel <- function(
 
     model_suffix <-
         substr(base_model_name, nchar(base_model_name) - 4, nchar(base_model_name))
-    stopifnot(model_suffix == ".stan", "The base model must end in .stan.")
+    stopifnot(model_suffix == ".stan")
     system(paste(python_script, " --base_model=", base_model_name, sep=""))
     model_name <- sub("\\.stan$", "", base_model_name)
     return(model_name)
@@ -18,21 +18,23 @@ GenerateSensitivityFromModel <- function(
 GetStanSensitivityModel <- function(model_name, stan_data) {
   model_sens <- stan_model(paste(model_name, "_sensitivity.stan", sep=""))
   model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
-                         data=stan_data, algorithm="Fixed_param", iter=1, chains=1)
+                         data=stan_data, algorithm="Fixed_param",
+                         iter=1, chains=1)
 
   # Get the sensitivity parameters in list form.
   sens_par_list <- get_inits(model_sens_fit)[[1]]
   for (par in names(sens_par_list)) {
     if (par %in% names(stan_data)) {
-      cat("Copying hyperparameter ", par, " from the data.\n")
+      cat("Copying hyperparameter '", par, "' from the data.\n", sep="")
       sens_par_list[[par]] <- stan_data[[par]]
     }
   }
 
   # These names help sort through the vectors of sensitivity.
-  stan_fit_instance <- result@.MISC$stan_fit_instance
-  param_names <- stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-  sens_param_names <- stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+  param_names <-
+    result@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+  sens_param_names <-
+    model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
 
   return(list(model_sens_fit=model_sens_fit,
               param_names=param_names,
@@ -42,7 +44,9 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
 
 # Process the results of GetStanSensitivityModel into a sensitivity matrix.
-GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
+GetStanSensitivityFromModelFit <- function(
+    draws_mat, stan_sensitivity_list, num_warmup_samples=nrow(draws_mat)) {
+
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   param_names <- stan_sensitivity_list$param_names
   sens_param_names <- stan_sensitivity_list$sens_param_names
@@ -56,7 +60,7 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
     setTxtProgressBar(prog_bar, value=n)
-    par_list <- get_inits(result, iter=n + num_samples)[[1]]
+    par_list <- get_inits(result, iter=n + num_warmup_samples)[[1]]
     for (par in ls(par_list)) {
       # Note that get_inits is currently broken:
       # https://github.com/stan-dev/rstan/issues/417
@@ -79,5 +83,10 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
   # hyperparameters.
   sens_mat <- sens_mat[setdiff(sens_param_names, param_names), ]
 
-  return(list(sens_mat=sens_mat, grad_mat=grad_mat, lp_vec=lp_vec))
+  # Normalize by the marginal standard deviation.
+  draws_sd <- sapply(1:ncol(draws_mat), function(col) sd(draws_mat[, col]))
+  sens_mat_normalized <- t(t(sens_mat) / draws_sd)
+
+  return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
+              grad_mat=grad_mat, lp_vec=lp_vec))
 }
