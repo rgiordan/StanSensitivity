@@ -61,8 +61,7 @@ GetStanSensitivityFromModelFit <- function(draws_mat, stan_sensitivity_list) {
 
   # Stan takes gradients with respect to everything in the parameters block,
   # not just the hyperparameters.  Remove the rows not corresponding to hyperparameters.
-  sens_mat <- sens_mat[setdiff(sens_param_names, param_names), ]
+  sens_mat <- sens_mat[setdiff(sens_param_names, param_names), , drop=FALSE]
 
   return(list(sens_mat=sens_mat, grad_mat=grad_mat, lp_vec=lp_vec))
 }
-

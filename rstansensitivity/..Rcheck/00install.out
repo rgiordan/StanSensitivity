@@ -1,0 +1,10 @@
+* installing *source* package ‘rstansensitivity’ ...
+Error : Invalid DESCRIPTION file
+
+Malformed maintainer field.
+
+See section 'The DESCRIPTION file' in the 'Writing R Extensions'
+manual.
+
+ERROR: installing package DESCRIPTION failed for package ‘rstansensitivity’
+* removing ‘/home/rgiordan/Documents/git_repos/StanSensitivity/rstansensitivity/..Rcheck/rstansensitivity’
