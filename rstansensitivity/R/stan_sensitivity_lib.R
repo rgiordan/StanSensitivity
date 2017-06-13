@@ -16,7 +16,6 @@ GenerateSensitivityFromModel <- function(
 
 # Compile the sensitivity model and get a stanfit object and related information.
 GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
-  model_sens <- stan_model(paste(model_name, "_sensitivity.stan", sep=""))
   model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
                          data=stan_data, algorithm="Fixed_param",
                          iter=1, chains=1)
@@ -45,7 +44,8 @@ GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
 
 # Process the results of GetStanSensitivityModel into a sensitivity matrix.
 GetStanSensitivityFromModelFit <- function(
-    sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples=nrow(draws_mat)) {
+    sampling_result, draws_mat, stan_sensitivity_list,
+    num_warmup_samples=floor(0.5 * nrow(draws_mat))) {
 
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   param_names <- stan_sensitivity_list$param_names
@@ -65,7 +65,7 @@ GetStanSensitivityFromModelFit <- function(
       # Note that get_inits is currently broken:
       # https://github.com/stan-dev/rstan/issues/417
       # ...but this has seemed to fix it (so far):
-      sens_par_list[[par]] <- as.numeric(par_list[[par]])
+      sens_par_list[[par]] <- as.array(par_list[[par]])
     }
     pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
     glp <- grad_log_prob(model_sens_fit, pars_free)

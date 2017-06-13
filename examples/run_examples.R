@@ -10,6 +10,8 @@ example_directory <- file.path(
 #base_model_name <- file.path(example_directory, "negative_binomial/negative_binomial.stan")
 base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
 
+# Set this to be the location of the python script, or run it by hand following
+# the directions in the README.
 python_script <- file.path(Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/python/generate_models.py")
 model_name <- GenerateSensitivityFromModel(base_model_name, python_script=python_script)
 

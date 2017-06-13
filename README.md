@@ -55,6 +55,8 @@ hyperparameters {
 currently no checks for this -- the sensitivity analysis will simply crash
 or not make sense!  (If there are constraints, it will silently report
 sensitivity to the unconstrained value, not the constrained value.)
+**Also note: The parser is currently rough and naive.**  Some ordinary stan features
+(like comments outside of program blocks) may not be supported.
 1. Run ```generate_models.py``` pointing to the script with the
 ```hyperparameters``` block defined:
 ```
