@@ -23,6 +23,4 @@ parameters {
   real hp_mean;
   real hp_var;
 }
-model {
-  target += 0.;
-}
+model { target += 0; }

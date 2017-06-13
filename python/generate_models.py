@@ -81,6 +81,37 @@ def generate_sensitivity_script(contents):
     return ''.join(script)
 
 
+# Generate a script with only the sensitivity parameters and no model
+# block.  This is useful for passing to get_inits without having to worry
+# about constraints implicitly defined in the model.
+def generate_sensitivity_parameters_script(contents):
+    script = []
+    for k, v in contents.iteritems():
+        if k == 'hyperparameters':
+            continue
+
+        elif k == 'model':
+            script.append('model { target += 0; }')
+
+        elif k == 'parameters':
+            script.append('parameters {')
+            script.append(contents['parameters'])
+
+            # TODO: script the constraints.
+            script.append('\n  // Hyperparameters:')
+            script.append(contents['hyperparameters'])
+            script.append('}\n')
+
+        else:
+            script.append('{} {{'.format(k))
+            script.append(v)
+            script.append('}\n')
+
+    script.append('\n')
+    return ''.join(script)
+
+
+
 def check_contents(contents):
     for block in [ 'data', 'parameters', 'hyperparameters' ]:
         if not block in contents:
@@ -107,4 +138,8 @@ if __name__ == "__main__":
 
     f = open(os.path.join(model_name + '_sensitivity.stan'), 'w')
     f.write(generate_sensitivity_script(contents))
+    f.close()
+
+    f = open(os.path.join(model_name + '_sensitivity_parameters.stan'), 'w')
+    f.write(generate_sensitivity_parameters_script(contents))
     f.close()
