@@ -21,7 +21,8 @@ using these examples can be found in ```examples/run_examples.R```.
 library(devtools)
 install_github("rgiordan/StanSensitivity", subdir="rstansensitivity")
 ```
-1. Start with an existing Stan model and dataset containing hyperparameters (e.g. ```example_models/negative_binomial/negative_binomial_original.stan``` and ```example_models/negative_binomial.data.R```).
+1. Start with an existing Stan model and dataset containing hyperparameters (e.g. ```example_models/negative_binomial/negative_binomial_original.stan``` and
+```example_models/negative_binomial.data.R```).
 1. Split your ```data``` block into a data block containing parameters that
 you want to keep fixed and a new ```hyperparameters``` block containing the
 parameters whose sensitivity you want to evaluate.  For example, the original
@@ -62,11 +63,12 @@ sensitivity to the unconstrained value, not the constrained value.)
 ```
 python/generate_models.py --base_model=example_models/negative_binomial/negative_binomial.stan
 ```
-This will produce two new models with the suffixes ```_generated.stan``` and
-```_sensitivity.stan```.   The former should be the same as your original
-model, and the latter will give you the necessary derivatives for sensitivity
+This will produce three new models with the suffixes ```_generated.stan```,
+```_sensitivity.stan```, and ```_sensitivity_parameters.stan```.
+The first should be the same as your original
+model, and the latter two will give you the necessary derivatives for sensitivity
 analysis.
-1. Run the R script ```R/run_examples.R```, setting the ```model_name``` variable
+1. Run an R script similar to ```R/run_examples.R```, setting the ```model_name``` variable
 to the full path of your original model without the ```.stan``` suffix, e.g.
 ```
 model_name <- file.path(example_directory, "negative_binomial/negative_binomial")
