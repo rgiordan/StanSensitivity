@@ -28,8 +28,8 @@ stan_data <- as.list(stan_data)
 
 # For now, you must use chains=1 for now to avoid confusion around get_inits.
 # The script currently assumes the same number of warm-up draws as final samples.
-num_warmup_samples <- 200
-num_samples <- 200
+num_warmup_samples <- 1000
+num_samples <- 1000
 sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
 print(summary(sampling_result))
 
@@ -37,79 +37,8 @@ print(summary(sampling_result))
 ##################################
 # Get the sensitivity model and sensitivity.
 
-#model_sens <- stan_model(paste(model_name, "_sensitivity.stan", sep=""))
-
-# model_sens_params <- stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
-#                           data=stan_data, algorithm="Fixed_param",
-#                           iter=1, chains=1)
-# sens_par_list <- get_inits(model_sens_params)[[1]]
-# model_par_list <- get_inits(sampling_result)[[1]]
-#
-# # Get the sensitivity parameters in list form.
-# for (par in names(model_par_list)) {
-#   cat("Copying parameter '", par, "' from the sampler\n", sep="")
-#   sens_par_list[[par]] <- model_par_list[[par]]
-# }
-# for (par in names(sens_par_list)) {
-#   if (par %in% names(stan_data)) {
-#     cat("Copying hyperparameter '", par, "' from the data.\n", sep="")
-#     sens_par_list[[par]] <- stan_data[[par]]
-#   }
-# }
-#
-# model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
-#                        data=stan_data, algorithm="Fixed_param",
-#                        iter=1, chains=1, init=list(sens_par_list))
-
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
-
-# # These names help sort through the vectors of sensitivity.
-# param_names <-
-#   sampling_result@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-# sens_param_names <-
-#   model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-#
-# stan_sensitivity_list <-
-#   list(model_sens_fit=model_sens_fit,
-#      param_names=param_names,
-#      sens_param_names=sens_param_names,
-#      sens_par_list=sens_par_list)
-#
-# model_sens_fit <- stan_sensitivity_list$model_sens_fit
-# param_names <- stan_sensitivity_list$param_names
-# sens_param_names <- stan_sensitivity_list$sens_param_names
-# sens_par_list_init <- stan_sensitivity_list$sens_par_list
-# sens_par_list <- sens_par_list_init
-#
-# # Get the model gradients with respect to the hyperparameters (and parameters).
-# num_samples <- nrow(draws_mat)
-# grad_mat <- matrix(NA, num_samples, length(sens_param_names))
-# lp_vec <- rep(NA, num_samples)
-# cat("Evaluating log gradients at the MCMC draws.\n")
-# prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
-#
-# for (n in 1:num_samples) {
-#   setTxtProgressBar(prog_bar, value=n)
-#   par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
-#   for (par in ls(par_list)) {
-#     # Note that get_inits is currently broken:
-#     # https://github.com/stan-dev/rstan/issues/417
-#     # ...but this has seemed to fix it (so far):
-#     if (length(dim(sens_par_list[[par]])) >= 2) {
-#       sens_par_list[[par]] <- array(unlist(par_list[[par]]), dim(par_list[[par]]))
-#     } else {
-#       sens_par_list[[par]] <- as.numeric(par_list[[par]])
-#     }
-#   }
-#   pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
-#   glp <- grad_log_prob(model_sens_fit, pars_free)
-#   grad_mat[n, ] <- glp
-#   lp_vec[n] <- attr(glp, "log_prob")
-# }
-#
-#
-# close(prog_bar)
 
 sens_result <-
   GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples)
@@ -134,6 +63,13 @@ sens_mat_normalized_df <-
   mutate(base_variable=sub("\\..*", "", variable))
 
 ggplot(sens_mat_normalized_df) +
+  geom_bar(stat="identity", position="dodge",
+           aes(x=hyperparameter, y=value, fill=variable)) +
+  facet_grid(base_variable ~ .) +
+  theme(legend.position="none")
+
+unique(sens_mat_normalized_df$base_variable)
+ggplot(filter(sens_mat_normalized_df, base_variable == "beta")) +
   geom_bar(stat="identity", position="dodge",
            aes(x=hyperparameter, y=value, fill=variable)) +
   facet_grid(base_variable ~ .) +
