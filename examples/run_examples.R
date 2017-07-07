@@ -66,3 +66,17 @@ plot(stan_data$y, sens_mat_normalized[weight_rows, 1])
 print(sampling_result)
 print(sens_mat[!weight_rows, , drop=FALSE])
 print(sens_mat_normalized[!weight_rows, , drop=FALSE])
+
+
+################################
+# Get the results in tidy form and graph.
+
+tidy_results <- GetTidyResult(draws_mat, sens_result)  
+
+ggplot(filter(tidy_results$sens_norm_df, !grepl("weight", hyperparameter))) +
+  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
+           stat="identity", position="dodge") +
+  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
+                    ymax=upper_sensitivity, group=hyperparameter),
+                position=position_dodge(0.9), width=0.2)
+
