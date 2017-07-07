@@ -7,8 +7,18 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
-#base_model_name <- file.path(example_directory, "negative_binomial/negative_binomial.stan")
-base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
+if (TRUE) {
+  base_model_name <- file.path(example_directory, "negative_binomial/negative_binomial.stan")
+  num_warmup_samples <- 50000
+  num_samples <- 50000
+}
+
+
+if (FALSE) {
+  base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
+  num_warmup_samples <- 5000
+  num_samples <- 5000
+}
 
 # Set this to be the location of the python script, or run it by hand following
 # the directions in the README.
@@ -27,8 +37,6 @@ stan_data <- as.list(stan_data)
 
 # For now, you must use chains=1 for now to avoid confusion around get_inits.
 # The script currently assumes the same number of warm-up draws as final samples.
-num_warmup_samples <- 5000
-num_samples <- 5000
 sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
 print(summary(sampling_result))
 
@@ -55,4 +63,3 @@ plot(stan_data$y, sens_mat_normalized[weight_rows, 1])
 print(sampling_result)
 print(sens_mat[!weight_rows, , drop=FALSE])
 print(sens_mat_normalized[!weight_rows, , drop=FALSE])
-

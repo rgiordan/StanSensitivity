@@ -33,7 +33,8 @@ GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
     }
     for (par in names(sens_par_list)) {
         if (par %in% names(stan_data)) {
-            cat("Copying hyperparameter '", par, "' from the data.\n", sep="")
+            cat("Copying hyperparameter '", par,
+                "' from the data block.\n", sep="")
             sens_par_list[[par]] <- stan_data[[par]]
         }
     }
