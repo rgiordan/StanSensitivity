@@ -1,11 +1,10 @@
 
 
 # Evaluate at draws using the hyperparameters in sens_par_list.
-EvaluateAtDraws <- function(sampling_result, draws_mat, stan_sensitivity_list,
-                            sens_par_list,
-                            num_warmup_samples=floor(0.5 * nrow(draws_mat)),
+EvaluateAtDraws <- function(sampling_result, draws_mat, stan_sensitivity_list, sens_par_list,
                             compute_grads=FALSE) {
 
+  num_warmup_samples <- attr(sampling_result, "sim")$warmup
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   sens_param_names <- stan_sensitivity_list$sens_param_names
 
@@ -48,10 +47,9 @@ EvaluateAtDraws <- function(sampling_result, draws_mat, stan_sensitivity_list,
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
 }
 
-
 lp_vec <- EvaluateAtDraws(sampling_result, draws_mat, stan_sensitivity_list,
-                          stan_sensitivity_list$sens_par_list, compute_grads=FALSE)$lp_vec
-
+                          stan_sensitivity_list$sens_par_list,
+                          compute_grads=FALSE)$lp_vec
 epsilon <- 0.01
 imp_sens_par_list <- stan_sensitivity_list$sens_par_list
 imp_sens_par_list$y_var <- imp_sens_par_list$y_var + epsilon
@@ -68,7 +66,6 @@ print(imp_mu_diff)
 sens_mat["y_var", "mu"] * epsilon
 
 
-
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
 sens_result <- GetStanSensitivityFromModelFit(
@@ -77,6 +74,36 @@ sens_result <- GetStanSensitivityFromModelFit(
 
 
 
+#############
+# Debug
+
+model_sens_fit <- stan_sensitivity_list$model_sens_fit
+
+n <- 1
+sens_par_list <- stan_sensitivity_list$sens_par_list
+par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
+
+for (par in ls(par_list)) {
+  if (length(dim(sens_par_list[[par]])) >= 2) {
+    sens_par_list[[par]] <-
+      array(unlist(par_list[[par]]), dim(par_list[[par]]))
+  } else {
+    sens_par_list[[par]] <- as.numeric(par_list[[par]])
+  }
+}
+pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
+
+# Should be 0
+par_list$mu - draws_mat[n, "mu"]
+log_prob(stan_sensitivity_list$model_sens_fit, pars_free) - draws_mat[n, "lp__"]
+lp_vec[n] - draws_mat[n, "lp__"]
+imp_lp_vec[n] - draws_mat[n, "lp__"]
+
+
+
+
+
+#########################################
 # Perturb and re-draw.  It looks like importance sampling is wrong.
 
 stan_data_perturb <- stan_data
@@ -87,3 +114,5 @@ draws_mat_perturb <- extract(sampling_result_perturb, permute=FALSE)[,1,]
 mean(draws_mat_perturb[, "mu"]) - mean(draws_mat[, "mu"])
 print(imp_mu_diff)
 sens_mat["y_var", "mu"] * epsilon
+
+
