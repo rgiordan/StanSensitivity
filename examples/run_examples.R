@@ -7,14 +7,14 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
-if (TRUE) {
+if (FALSE) {
   base_model_name <- file.path(example_directory, "negative_binomial/negative_binomial.stan")
   num_warmup_samples <- 50000
   num_samples <- 50000
 }
 
 
-if (FALSE) {
+if (TRUE) {
   base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
   num_warmup_samples <- 5000
   num_samples <- 5000
@@ -46,7 +46,7 @@ print(summary(sampling_result))
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
 sens_result <- GetStanSensitivityFromModelFit(
-  sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
+  sampling_result, draws_mat, stan_sensitivity_list)
 
 
 ##################################

@@ -34,7 +34,7 @@ GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
     for (par in names(sens_par_list)) {
         if (par %in% names(stan_data)) {
             cat("Copying hyperparameter '", par,
-                "' from the data block.\n", sep="")
+                 "' from the data block.\n", sep="")
             sens_par_list[[par]] <- stan_data[[par]]
         }
     }
@@ -72,7 +72,7 @@ EvaluateAtDraws <- function(
   num_samples <- nrow(draws_mat)
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    grad_mat <- matrix(NA, num_samples, length(sens_param_names))
+    grad_mat <- matrix(NA, length(sens_param_names), num_samples)
   } else {
     grad_mat <- matrix()
   }
@@ -97,7 +97,7 @@ EvaluateAtDraws <- function(
 
     if (compute_grads) {
       glp <- grad_log_prob(model_sens_fit, pars_free)
-      grad_mat[n, ] <- glp
+      grad_mat[, n] <- glp
       lp_vec[n] <- attr(glp, "log_prob")
     } else {
       lp_vec[n] <- log_prob(model_sens_fit, pars_free)
@@ -121,7 +121,7 @@ GetStanSensitivityFromModelFit <- function(
     sens_param_names <- stan_sensitivity_list$sens_param_names
 
     # Calculate the sensitivity.
-    sens_mat <- cov(model_at_draws$grad_mat, draws_mat)
+    sens_mat <- cov(t(model_at_draws$grad_mat), draws_mat)
     rownames(sens_mat) <- sens_param_names
 
     # Stan takes gradients with respect to everything in the parameters block,
