@@ -7,14 +7,14 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
-if (FALSE) {
+if (TRUE) {
   base_model_name <- file.path(example_directory, "negative_binomial/negative_binomial.stan")
   num_warmup_samples <- 50000
   num_samples <- 50000
 }
 
 
-if (TRUE) {
+if (FALSE) {
   base_model_name <- file.path(example_directory, "normal_censored/normal_censored.stan")
   num_warmup_samples <- 5000
   num_samples <- 5000
@@ -37,7 +37,9 @@ stan_data <- as.list(stan_data)
 
 # For now, you must use chains=1 for now to avoid confusion around get_inits.
 # The script currently assumes the same number of warm-up draws as final samples.
+mcmc_time <- Sys.time()
 sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+mcmc_time <- Sys.time() - mcmc_time
 print(summary(sampling_result))
 
 ##################################
@@ -45,8 +47,9 @@ print(summary(sampling_result))
 
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
-sens_result <- GetStanSensitivityFromModelFit(
-  sampling_result, draws_mat, stan_sensitivity_list)
+sens_time <- Sys.time()
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
+sens_time <- Sys.time()- sens_time
 
 
 ##################################
