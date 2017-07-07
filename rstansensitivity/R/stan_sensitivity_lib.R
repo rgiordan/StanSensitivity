@@ -58,45 +58,69 @@ GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
 }
 
 
+# Evaluate at draws using the hyperparameters in sens_par_list.
+EvaluateAtDraws <- function(
+    sampling_result, draws_mat, stan_sensitivity_list, sens_par_list,
+    compute_grads=FALSE) {
+
+  num_warmup_samples <- attr(sampling_result, "sim")$warmup
+  model_sens_fit <- stan_sensitivity_list$model_sens_fit
+  sens_param_names <- stan_sensitivity_list$sens_param_names
+
+  # Get the model gradients with respect to the hyperparameters (and parameters).
+  num_samples <- nrow(draws_mat)
+  lp_vec <- rep(NA, num_samples)
+  if (compute_grads) {
+    grad_mat <- matrix(NA, num_samples, length(sens_param_names))
+  } else {
+    grad_mat <- matrix()
+  }
+
+  cat("Evaluating model at the MCMC draws.\n")
+  prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+  for (n in 1:num_samples) {
+    setTxtProgressBar(prog_bar, value=n)
+    par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
+    for (par in ls(par_list)) {
+      # Note that get_inits is currently broken:
+      # https://github.com/stan-dev/rstan/issues/417
+      # ...but this has seemed to fix it (so far):
+      if (length(dim(sens_par_list[[par]])) >= 2) {
+        sens_par_list[[par]] <-
+          array(unlist(par_list[[par]]), dim(par_list[[par]]))
+      } else {
+        sens_par_list[[par]] <- as.numeric(par_list[[par]])
+      }
+    }
+    pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
+
+    if (compute_grads) {
+      glp <- grad_log_prob(model_sens_fit, pars_free)
+      grad_mat[n, ] <- glp
+      lp_vec[n] <- attr(glp, "log_prob")
+    } else {
+      lp_vec[n] <- log_prob(model_sens_fit, pars_free)
+    }
+  }
+  close(prog_bar)
+  return(list(lp_vec=lp_vec, grad_mat=grad_mat))
+}
+
+
 # Process the results of GetStanSensitivityModel into a sensitivity matrix.
 GetStanSensitivityFromModelFit <- function(
-    sampling_result, draws_mat, stan_sensitivity_list,
-    num_warmup_samples=floor(0.5 * nrow(draws_mat))) {
-
-    model_sens_fit <- stan_sensitivity_list$model_sens_fit
-    param_names <- stan_sensitivity_list$param_names
-    sens_param_names <- stan_sensitivity_list$sens_param_names
-    sens_par_list <- stan_sensitivity_list$sens_par_list
+    sampling_result, draws_mat, stan_sensitivity_list) {
 
     # Get the model gradients with respect to the hyperparameters (and parameters).
-    num_samples <- nrow(draws_mat)
-    grad_mat <- matrix(NA, num_samples, length(sens_param_names))
-    lp_vec <- rep(NA, num_samples)
-    cat("Evaluating log gradients at the MCMC draws.\n")
-    prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
-    for (n in 1:num_samples) {
-        setTxtProgressBar(prog_bar, value=n)
-        par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
-        for (par in ls(par_list)) {
-          # Note that get_inits is currently broken:
-          # https://github.com/stan-dev/rstan/issues/417
-          # ...but this has seemed to fix it (so far):
-            if (length(dim(sens_par_list[[par]])) >= 2) {
-                sens_par_list[[par]] <-
-                    array(unlist(par_list[[par]]), dim(par_list[[par]]))
-            } else {
-                sens_par_list[[par]] <- as.numeric(par_list[[par]])
-            }
-        }
-        pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
-        glp <- grad_log_prob(model_sens_fit, pars_free)
-        grad_mat[n, ] <- glp
-        lp_vec[n] <- attr(glp, "log_prob")
-    }
-    close(prog_bar)
+    model_at_draws <- EvaluateAtDraws(
+            sampling_result, draws_mat, stan_sensitivity_list,
+            stan_sensitivity_list$sens_par_list, compute_grads=TRUE)
+
+    param_names <- stan_sensitivity_list$param_names
+    sens_param_names <- stan_sensitivity_list$sens_param_names
 
     # Calculate the sensitivity.
-    sens_mat <- cov(grad_mat, draws_mat)
+    sens_mat <- cov(model_at_draws$grad_mat, draws_mat)
     rownames(sens_mat) <- sens_param_names
 
     # Stan takes gradients with respect to everything in the parameters block,
@@ -109,5 +133,32 @@ GetStanSensitivityFromModelFit <- function(
     sens_mat_normalized <- t(t(sens_mat) / draws_sd)
 
     return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
-                grad_mat=grad_mat, lp_vec=lp_vec))
+                grad_mat=model_at_draws$grad_mat, lp_vec=model_at_draws$lp_vec))
+}
+
+
+GetImportanceSamplingFromModelFit <- function(
+    sampling_result, draws_mat, stan_sensitivity_list,
+    imp_sens_par_list, lp_vec=NULL) {
+
+    if (is.null(lp_vec)) {
+        lp_vec <- EvaluateAtDraws(
+            sampling_result, draws_mat, stan_sensitivity_list,
+            stan_sensitivity_list$sens_par_list, compute_grads=FALSE)$lp_vec
+    }
+    # Get the model gradients with respect to the hyperparameters (and parameters).
+    imp_lp_vec <- EvaluateAtDraws(
+            sampling_result, draws_mat, stan_sensitivity_list,
+            imp_sens_par_list, compute_grads=FALSE)$lp_vec
+
+    imp_weights <- exp(imp_lp_vec - lp_vec)
+    imp_weights <- imp_weights / sum(imp_weights)
+
+    eff_num_imp_samples <- 1 / sum(imp_weights ^ 2)
+
+    imp_means <- colSums(imp_weights * draws_mat)
+
+    return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
+                eff_num_imp_samples=eff_num_imp_samples,
+                imp_means=imp_means))
 }
