@@ -120,21 +120,21 @@ GetStanSensitivityFromModelFit <- function(
     param_names <- stan_sensitivity_list$param_names
     sens_param_names <- stan_sensitivity_list$sens_param_names
 
-    # Calculate the sensitivity.
-    sens_mat <- cov(t(model_at_draws$grad_mat), draws_mat)
-    rownames(sens_mat) <- sens_param_names
-
     # Stan takes gradients with respect to everything in the parameters block,
     # not just the hyperparameters.  Remove the rows not corresponding to
     # hyperparameters.
-    sens_mat <- sens_mat[setdiff(sens_param_names, param_names), , drop=FALSE]
+    grad_mat <- model_at_draws$grad_mat
+    rownames(grad_mat) <- sens_param_names
+    grad_mat <- grad_mat[setdiff(sens_param_names, param_names),, drop=FALSE]
+
+    # Calculate the sensitivity.
+    sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
 
     # Normalize by the marginal standard deviation.
-    draws_sd <- sapply(1:ncol(draws_mat), function(col) sd(draws_mat[, col]))
-    sens_mat_normalized <- t(t(sens_mat) / draws_sd)
+    sens_mat_normalized <- NormalizeSensitivityMatrix(sens_mat, draws_mat)
 
     return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
-                grad_mat=model_at_draws$grad_mat, lp_vec=model_at_draws$lp_vec))
+                grad_mat=grad_mat, lp_vec=model_at_draws$lp_vec))
 }
 
 
@@ -162,4 +162,66 @@ GetImportanceSamplingFromModelFit <- function(
     return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
                 eff_num_imp_samples=eff_num_imp_samples,
                 imp_means=imp_means))
+}
+
+
+#########################################
+# Bootstrap the covariance calculations.
+
+GetSensitivityFromGrads <- function(grad_mat, draws_mat) {
+  # This should in fact match cov() but without having to transpose,
+  # which gives a speedup.
+
+  # Should match:
+  # sens_mat <- cov(t(grad_mat), draws_mat)
+
+  grad_means <- rowMeans(grad_mat)
+  draw_means <- colMeans(draws_mat)
+
+  n <- nrow(draws_mat)
+  sens_mat <- (grad_mat %*% draws_mat) / (n - 1) -
+               grad_means %*% t(draw_means) * n / (n - 1)
+
+  rownames(sens_mat) <- rownames(grad_mat)
+  colnames(sens_mat) <- colnames(draws_mat)
+
+  return(sens_mat)
+}
+
+
+NormalizeSensitivityMatrix <- function(sens_mat, draws_mat) {
+  draw_sds <- sqrt(apply(draws_mat, sd, MARGIN=2))
+  return(sens_mat / rep(draw_sds, each=nrow(sens_mat)))
+}
+
+
+BootstrapSensitivityMatrix <- function(draws_mat, grad_mat, alpha=0.1, num_boot=200) {
+  cat("Bootstrapping sensitivity matrix.")
+  prog_bar <- txtProgressBar(min=1, max=num_boot, style=3)
+  num_boot <- 200
+  sens_mat_dim <-
+  sens_mat_array <- array(NA, dim=c(num_boot, dim(sens_mat)))
+  sens_mat_normalized_array <- array(NA, dim=c(num_boot, dim(sens_mat)))
+  for (boot in 1:num_boot) {
+    setTxtProgressBar(prog_bar, value=boot)
+    w <- sample.int(n=nrow(draws_mat), size=nrow(draws_mat), replace=TRUE)
+    sens_mat_boot <-
+      GetSensitivityFromGrads(grad_mat[, w, drop=FALSE],
+                              draws_mat[w, , drop=FALSE])
+    sens_mat_array[boot,,] <- sens_mat_boot
+    sens_mat_normalized_array[boot,,] <-
+      NormalizeSensitivityMatrix(sens_mat_boot, draws_mat[w, , drop=FALSE])
+  }
+  close(prog_bar)
+  return(list(sens_mat_array=sens_mat_array,
+              sens_mat_normalized_array=sens_mat_normalized_array))
+}
+
+
+GetArrayQuantiles <- function(sens_mat_array, alpha=0.1) {
+  lower <- apply(sens_mat_array, MARGIN=c(2, 3),
+                 function(x) { quantile(x, alpha) })
+  upper <- apply(sens_mat_array, MARGIN=c(2, 3),
+                 function(x) { quantile(x, 1 - alpha) })
+  return(list(lower=lower, upper=upper))
 }
