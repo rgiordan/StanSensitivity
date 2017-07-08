@@ -7,7 +7,6 @@ parameters {
   real<lower=0> beta;
 
   // Hyperparameters:
-  real weights[N];
   real cauchy_loc_alpha;
   real cauchy_loc_beta;
   real cauchy_scale_alpha;

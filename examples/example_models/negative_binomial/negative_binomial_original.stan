@@ -1,7 +1,6 @@
 data {
   int<lower=1> N;
   int<lower=0> y[N];
-  real weights[N];
   real cauchy_loc_alpha;
   real cauchy_loc_beta;
   real cauchy_scale_alpha;
@@ -15,5 +14,5 @@ model {
   alpha ~ cauchy(cauchy_loc_alpha, cauchy_scale_alpha);
   beta ~ cauchy(cauchy_loc_beta, cauchy_scale_beta);
   for (i in 1:N)
-    target += weights[i] * neg_binomial_lpmf(y[i] | alpha, beta);
+    target += neg_binomial_lpmf(y[i] | alpha, beta);
 }

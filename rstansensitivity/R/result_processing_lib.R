@@ -113,5 +113,5 @@ GetTidyResult <- function(draws_mat, sens_result, num_boot=500, alpha=0.05) {
     sens_mat_normalized,
     sens_mat_normalized_quantiles$lower,
     sens_mat_normalized_quantiles$upper)
-  return(list(sens_df, sens_norm_df))
+  return(list(sens_df=sens_df, sens_norm_df=sens_norm_df))
 }

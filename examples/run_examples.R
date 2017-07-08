@@ -80,3 +80,5 @@ ggplot(filter(tidy_results$sens_norm_df, !grepl("weight", hyperparameter))) +
                     ymax=upper_sensitivity, group=hyperparameter),
                 position=position_dodge(0.9), width=0.2)
 
+
+
