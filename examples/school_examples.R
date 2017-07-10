@@ -48,6 +48,7 @@ sens_time <- Sys.time()- sens_time
 
 tidy_results <- GetTidyResult(draws_mat, sens_result)
 
+dev.new()
 ggplot(filter(tidy_results$sens_norm_df,
               abs(mean_sensitivity) > 1.0)) +
   geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
@@ -66,7 +67,8 @@ ggplot(filter(tidy_results$sens_norm_df,
                 position=position_dodge(0.9), width=0.2) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
+ggplot(filter(tidy_results$sens_norm_df,
+              abs(tidy_results$sens_norm_df$mean_sensitivity) > 1.0)) +
   geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
            stat="identity", position="dodge") +
   geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
@@ -79,7 +81,7 @@ ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
 # Perturb and re-fit
 
 perturb_par <- "R.3.3"
-epsilon <- 0.2
+epsilon <- 0.1
 
 # Importance sampling.
 se_mean <- summary(sampling_result)$summary[param_names, "se_mean"]
@@ -103,13 +105,16 @@ imp_diff <- imp_results$imp_means - colMeans(draws_mat)
   # cat("Imp. samp. approx. err:\t\t", 2 * imp_se, "\n")
 }
 
-plot(imp_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon)
+dev.new()
+plot(imp_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon); abline(0, 1)
 
 # Re-run MCMC
 stan_data_perturb <- stan_data
 stan_data_perturb[["R"]][3, 3] <- stan_data_perturb[["R"]][3, 3] + epsilon
+mcmc_time <- Sys.time()
 sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
                                     iter=(num_samples + num_warmup_samples))
+mcmc_time <- Sys.time() - mcmc_time
 draws_mat_perturb <- extract(sampling_result_perturb, permute=FALSE)[,1,]
 perturb_se <-
   data.frame(t(summary(sampling_result_perturb)$summary[, "se_mean"])) %>%
@@ -127,16 +132,32 @@ mcmc_diff_df <-
   inner_join(perturb_se, by=c("parameter", "method"))
 head(mcmc_diff_df)
 
-mutate(mcmc_diff_df, mean_diff_upper=mean_diff + 2 * sqrt(2) * se)
+mcmc_diff_df <-
+  mutate(mcmc_diff_df,
+         top_change=abs(mean_diff) > quantile(abs(mean_diff), 0.9))
+
+sensitive_params <-
+  as.character(filter(tidy_results$sens_norm_df, abs(mean_sensitivity) > 1)$parameter)
 
 dev.new()
-ggplot(mcmc_diff_df) +
-  geom_point(aes(y=mean_diff, x=mean_sensitivity * epsilon)) +
+ggplot(filter(mcmc_diff_df, parameter %in% sensitive_params)) +
+  geom_point(aes(y=mean_diff, x=mean_sensitivity * epsilon, color=parameter), size=3) +
   geom_errorbar(aes(ymin=mean_diff - 2 * se, ymax=mean_diff + 2 * se, x=mean_sensitivity * epsilon)) +
   geom_errorbarh(aes(y=mean_diff, x=mean_sensitivity * epsilon,
                      xmin=lower_sensitivity * epsilon, xmax=upper_sensitivity * epsilon)) +
   geom_abline(aes(slope=1, intercept=0))
 
+# Omega.2.2 is off.
+top_misses <-
+  arrange(mcmc_diff_df, desc(abs(mean_diff - epsilon * mean_sensitivity)))[1:10, "parameter"]
+
+dev.new()
+ggplot(filter(mcmc_diff_df, parameter %in% top_misses)) +
+  geom_point(aes(y=mean_diff, x=mean_sensitivity * epsilon, color=parameter), size=3) +
+  geom_errorbar(aes(ymin=mean_diff - 2 * se, ymax=mean_diff + 2 * se, x=mean_sensitivity * epsilon)) +
+  geom_errorbarh(aes(y=mean_diff, x=mean_sensitivity * epsilon,
+                     xmin=lower_sensitivity * epsilon, xmax=upper_sensitivity * epsilon)) +
+  geom_abline(aes(slope=1, intercept=0))
 
 {
   cat("MCMC difference:\t\t", colMeans(draws_mat_perturb) - colMeans(draws_mat), "\n")
