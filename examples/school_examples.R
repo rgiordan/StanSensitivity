@@ -46,7 +46,7 @@ sens_time <- Sys.time()- sens_time
 ##################################
 # Inspect the results.
 
-tidy_results <- GetTidyResult(draws_mat, sens_result)  
+tidy_results <- GetTidyResult(draws_mat, sens_result)
 
 ggplot(filter(tidy_results$sens_norm_df,
               abs(mean_sensitivity) > 1.0)) +
@@ -82,10 +82,7 @@ perturb_par <- "R.3.3"
 epsilon <- 0.2
 
 # Importance sampling.
-# Note: it appears that param names doesn't match up with the summary names
-# if you have covariance matrices.
-# param_names <- stan_sensitivity_list$param_names
-# se_mean <- summary(sampling_result)$summary[param_names, "se_mean"]
+se_mean <- summary(sampling_result)$summary[param_names, "se_mean"]
 # min_epsilon <- 2.0 * min(se_mean / abs(sens_mat[perturb_par, param_names]))
 # if (epsilon < min_epsilon) {
 #   warning("The expected change is less than twice the mean standard error for every parameter.")
@@ -114,8 +111,32 @@ stan_data_perturb[["R"]][3, 3] <- stan_data_perturb[["R"]][3, 3] + epsilon
 sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
                                     iter=(num_samples + num_warmup_samples))
 draws_mat_perturb <- extract(sampling_result_perturb, permute=FALSE)[,1,]
-perturb_se <- summary(sampling_result_perturb)$summary[, "se_mean"]
+perturb_se <-
+  data.frame(t(summary(sampling_result_perturb)$summary[, "se_mean"])) %>%
+  mutate(method="mcmc") %>%
+  melt(id.vars=c("method")) %>%
+  rename(parameter=variable, se=value)  
+
 mcmc_diff <- colMeans(draws_mat_perturb) - colMeans(draws_mat)
+mcmc_diff_df <-
+  data.frame(t(mcmc_diff)) %>%
+  mutate(method="mcmc") %>%
+  melt(id.vars=c("method")) %>%
+  rename(parameter=variable, mean_diff=value) %>%
+  inner_join(filter(tidy_results$sens_df, hyperparameter==perturb_par), by="parameter") %>%
+  inner_join(perturb_se, by=c("parameter", "method"))
+head(mcmc_diff_df)
+
+mutate(mcmc_diff_df, mean_diff_upper=mean_diff + 2 * sqrt(2) * se)
+
+dev.new()
+ggplot(mcmc_diff_df) +
+  geom_point(aes(y=mean_diff, x=mean_sensitivity * epsilon)) +
+  geom_errorbar(aes(ymin=mean_diff - 2 * se, ymax=mean_diff + 2 * se, x=mean_sensitivity * epsilon)) +
+  geom_errorbarh(aes(y=mean_diff, x=mean_sensitivity * epsilon,
+                     xmin=lower_sensitivity * epsilon, xmax=upper_sensitivity * epsilon)) +
+  geom_abline(aes(slope=1, intercept=0))
+
 
 {
   cat("MCMC difference:\t\t", colMeans(draws_mat_perturb) - colMeans(draws_mat), "\n")
@@ -126,8 +147,6 @@ mcmc_diff <- colMeans(draws_mat_perturb) - colMeans(draws_mat)
   cat("MCMC approx. err:\t\t", 2 * perturb_se, "\n")
 }
 
-
-plot(mcmc_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon)
 
 
 
