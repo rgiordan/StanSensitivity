@@ -95,8 +95,24 @@ mcmc_diff_df <-
 
 ggplot() +
   geom_point(data=mcmc_diff_df, aes(x=epsilon, y=value, color=variable)) +
-  geom_abline(data=sens_df, aes(intercept=0, slope=value, color=parameter), lwd=2) +
+  geom_abline(data=sens_df, aes(intercept=0, slope=value, color=parameter), lwd=1) +
   expand_limits(x=0, y=0)
 
-ggplot(sens_df) +
-  geom_abline(aes(intercept=0, slope=value, color=parameter, linetype=hyperparameter))
+
+
+
+###############################
+# Check the bootstrap
+
+num_boot <- 200
+mean_array <- array(NA, dim=c(num_boot, ncol(draws_mat)))
+prog_bar <- txtProgressBar(min=1, max=num_boot, style=3)
+for (boot in 1:num_boot) {
+  setTxtProgressBar(prog_bar, value=boot)
+  w <- sample.int(n=nrow(draws_mat), size=nrow(draws_mat), replace=TRUE)
+  mean_array[boot,] <- colMeans(draws_mat[w,, drop=FALSE])
+}
+close(prog_bar)
+
+apply(mean_array, MARGIN=2, sd)
+summary(sampling_result)$summary[, "se_mean"]

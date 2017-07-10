@@ -33,14 +33,16 @@ NormalizeSensitivityMatrix <- function(sens_mat, draws_mat) {
 }
 
 
+# Note: by ignoring the autocorrelation of MCMC samples, this is underestimating
+# the variance of the sensitivity estimates.
 BootstrapSensitivityMatrix <- function(
     draws_mat, grad_mat, alpha=0.1, num_boot=200) {
   cat("Bootstrapping sensitivity matrix.")
   prog_bar <- txtProgressBar(min=1, max=num_boot, style=3)
   num_boot <- 200
-  sens_mat_dim <-
-  sens_mat_array <- array(NA, dim=c(num_boot, dim(sens_mat)))
-  sens_mat_normalized_array <- array(NA, dim=c(num_boot, dim(sens_mat)))
+  sens_mat_dim <- c(nrow(grad_mat), ncol(draws_mat))
+  sens_mat_array <- array(NA, dim=c(num_boot, sens_mat_dim))
+  sens_mat_normalized_array <- array(NA, dim=c(num_boot, sens_mat_dim))
   for (boot in 1:num_boot) {
     setTxtProgressBar(prog_bar, value=boot)
     w <- sample.int(n=nrow(draws_mat), size=nrow(draws_mat), replace=TRUE)
@@ -108,9 +110,9 @@ GetTidyResult <- function(draws_mat, sens_result, num_boot=500, alpha=0.05) {
   sens_mat_normalized_quantiles <-
     GetArrayQuantiles(boot_results$sens_mat_normalized_array, alpha=0.1)
   sens_df <- SummarizeSensitivityMatrices(
-    sens_mat, sens_mat_quantiles$lower, sens_mat_quantiles$upper)
+    sens_result$sens_mat, sens_mat_quantiles$lower, sens_mat_quantiles$upper)
   sens_norm_df <- SummarizeSensitivityMatrices(
-    sens_mat_normalized,
+    sens_result$sens_mat_normalized,
     sens_mat_normalized_quantiles$lower,
     sens_mat_normalized_quantiles$upper)
   return(list(sens_df=sens_df, sens_norm_df=sens_norm_df))

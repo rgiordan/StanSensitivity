@@ -33,93 +33,101 @@ num_samples <- 1000
 sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
 print(summary(sampling_result))
 
-
 ##################################
 # Get the sensitivity model and sensitivity.
 
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
-
-sens_result <-
-  GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list, num_warmup_samples)
+sens_time <- Sys.time()
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
+sens_time <- Sys.time()- sens_time
 
 
 ##################################
 # Inspect the results.
 
-sens_mat <- sens_result$sens_mat
-sens_mat <- sens_mat[, colnames(sens_mat) != "lp__"]
-sens_mat_normalized <- sens_result$sens_mat_normalized
-sens_mat_normalized <- sens_mat_normalized[, colnames(sens_mat_normalized) != "lp__"]
+tidy_results <- GetTidyResult(draws_mat, sens_result)  
 
-# Look at the sensitivity to other hyperparameters.
-print(sens_mat_normalized)
-rownames(sens_mat_normalized)
+ggplot(filter(tidy_results$sens_norm_df,
+              abs(mean_sensitivity) > 1.0)) +
+  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
+           stat="identity", position="dodge") +
+  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
+                    ymax=upper_sensitivity, group=hyperparameter),
+                position=position_dodge(0.9), width=0.2) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-sens_mat_normalized_df <-
-  data.frame(sens_mat_normalized) %>%
-  mutate(hyperparameter=rownames(sens_mat_normalized)) %>%
-  melt(id.var="hyperparameter") %>%
-  mutate(base_variable=sub("\\..*", "", variable))
+ggplot(filter(tidy_results$sens_norm_df,
+              grepl("beta", parameter))) +
+  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
+           stat="identity", position="dodge") +
+  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
+                    ymax=upper_sensitivity, group=hyperparameter),
+                position=position_dodge(0.9), width=0.2) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-ggplot(sens_mat_normalized_df) +
-  geom_bar(stat="identity", position="dodge",
-           aes(x=hyperparameter, y=value, fill=variable)) +
-  facet_grid(base_variable ~ .) +
-  theme(legend.position="none")
-
-unique(sens_mat_normalized_df$base_variable)
-ggplot(filter(sens_mat_normalized_df, base_variable == "beta")) +
-  geom_bar(stat="identity", position="dodge",
-           aes(x=hyperparameter, y=value, fill=variable)) +
-  facet_grid(base_variable ~ .) +
-  theme(legend.position="none")
-
-
-
-############################
-# Demonstrate get_inits is screwed up.
-
-examples_loc <- "/home/rgiordan/Documents/git_repos/example-models/bugs_examples/vol2"
-stan_data <- new.env()
-source(file.path(examples_loc, "schools/schools.data.R"), local=stan_data)
-stan_data <- as.list(stan_data)
-
-school_model <- stan_model(file.path(examples_loc, "schools/schools-1.stan"))
-sampling_result <- sampling(school_model, data=stan_data, chains=1, iter=200)
-
-par_list <- get_inits(sampling_result, iter=1)[[1]]
-pars_free <- unconstrain_pars(sampling_result, par_list) # Fails
-# Fails:
-# Error in object@.MISC$stan_fit_instance$unconstrain_pars(pars) :
-# variable beta missing
-
-# It fails for every variable since they're all malformed.
-# But the matrix parameter is especially strange:
-
-class(par_list$alpha)
-# [1] "matrix"
-dim(par_list$alpha)
-# [1] 38  3
-class(par_list$alpha[1])
-# [1] "list"
-par_list$alpha[1, 1]
-# [[1]]
-# [1] 0.7710187
-
-array(unlist(par_list$alpha), dim(par_list$alpha))
+ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
+  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
+           stat="identity", position="dodge") +
+  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
+                    ymax=upper_sensitivity, group=hyperparameter),
+                position=position_dodge(0.9), width=0.2) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
+###########################
+# Perturb and re-fit
 
-class(par_list$beta)
-par_list$beta <- as.numeric(par_list$beta)
-par_list$theta <- as.numeric(par_list$theta)
-par_list$phi <- as.numeric(par_list$phi)
-par_list$alpha <- as.numeric(par_list$alpha)
+perturb_par <- "R.3.3"
+epsilon <- 0.2
 
-pars_free <- unconstrain_pars(sampling_result, par_list)
+# Importance sampling.
+# Note: it appears that param names doesn't match up with the summary names
+# if you have covariance matrices.
+# param_names <- stan_sensitivity_list$param_names
+# se_mean <- summary(sampling_result)$summary[param_names, "se_mean"]
+# min_epsilon <- 2.0 * min(se_mean / abs(sens_mat[perturb_par, param_names]))
+# if (epsilon < min_epsilon) {
+#   warning("The expected change is less than twice the mean standard error for every parameter.")
+# }
+imp_sens_par_list <- stan_sensitivity_list$sens_par_list
+imp_sens_par_list[["R"]][3, 3] <- imp_sens_par_list[["R"]][3, 3] + epsilon
 
-class(par_list$alpha[0])
+imp_results <- GetImportanceSamplingFromModelFit(
+  sampling_result, draws_mat, stan_sensitivity_list,
+  imp_sens_par_list, lp_vec=sens_result$lp_vec)
+
+imp_diff <- imp_results$imp_means - colMeans(draws_mat)
+
+{
+  cat("Imp. samp. difference:\t\t", imp_diff, "\n")
+  cat("Sensitivity difference:\t\t", sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon, "\n")
+  cat("Eff. # of importance samples:\t", imp_results$eff_num_imp_samples, "\n")
+  # cat("Imp. samp. approx. err:\t\t", 2 * imp_se, "\n")
+}
+
+plot(imp_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon)
+
+# Re-run MCMC
+stan_data_perturb <- stan_data
+stan_data_perturb[["R"]][3, 3] <- stan_data_perturb[["R"]][3, 3] + epsilon
+sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
+                                    iter=(num_samples + num_warmup_samples))
+draws_mat_perturb <- extract(sampling_result_perturb, permute=FALSE)[,1,]
+perturb_se <- summary(sampling_result_perturb)$summary[, "se_mean"]
+mcmc_diff <- colMeans(draws_mat_perturb) - colMeans(draws_mat)
+
+{
+  cat("MCMC difference:\t\t", colMeans(draws_mat_perturb) - colMeans(draws_mat), "\n")
+  cat("Imp. samp. difference:\t\t", imp_diff, "\n")
+  cat("Sensitivity difference:\t\t", sens_mat[perturb_par, , drop=FALSE] * epsilon, "\n")
+  cat("Eff. # of importance samples:\t", imp_results$eff_num_imp_samples, "\n")
+  cat("Imp. samp. approx. err:\t\t", 2 * imp_se, "\n")
+  cat("MCMC approx. err:\t\t", 2 * perturb_se, "\n")
+}
+
+
+plot(mcmc_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon)
 
 
 
