@@ -67,6 +67,7 @@ ggplot(filter(tidy_results$sens_norm_df,
                 position=position_dodge(0.9), width=0.2) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+dev.new()
 ggplot(filter(tidy_results$sens_norm_df,
               abs(tidy_results$sens_norm_df$mean_sensitivity) > 1.0)) +
   geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
@@ -84,19 +85,47 @@ perturb_par <- "R.3.3"
 epsilon <- 0.1
 
 # Importance sampling.
-se_mean <- summary(sampling_result)$summary[param_names, "se_mean"]
-# min_epsilon <- 2.0 * min(se_mean / abs(sens_mat[perturb_par, param_names]))
-# if (epsilon < min_epsilon) {
-#   warning("The expected change is less than twice the mean standard error for every parameter.")
-# }
-imp_sens_par_list <- stan_sensitivity_list$sens_par_list
-imp_sens_par_list[["R"]][3, 3] <- imp_sens_par_list[["R"]][3, 3] + epsilon
+se_mean <- summary(sampling_result)$summary[, "se_mean"]
+min_epsilon <- 2.0 * min(se_mean / abs(sens_result$sens_mat[perturb_par, ]))
+if (epsilon < min_epsilon) {
+  warning("The expected change is less than twice the mean standard error for every parameter.")
+}
 
-imp_results <- GetImportanceSamplingFromModelFit(
-  sampling_result, draws_mat, stan_sensitivity_list,
-  imp_sens_par_list, lp_vec=sens_result$lp_vec)
+imp_list <- list()
+num_eff_samples_list <- list()
+eps_length <- 20
+for (this_eps in seq(0, epsilon, length.out=eps_length)) {
+  imp_sens_par_list <- stan_sensitivity_list$sens_par_list
+  imp_sens_par_list[["R"]][3, 3] <- imp_sens_par_list[["R"]][3, 3] + this_eps
+  
+  imp_results <- GetImportanceSamplingFromModelFit(
+    sampling_result, draws_mat, stan_sensitivity_list,
+    imp_sens_par_list, lp_vec=sens_result$lp_vec)
+  
+  imp_diff <- imp_results$imp_means - colMeans(draws_mat)
+  num_eff_samples_list[[length(num_eff_samples_list) + 1]] <-
+    imp_results$eff_num_imp_samples
+  imp_list[[length(imp_list) + 1]] <-
+    data.frame(t(imp_diff)) %>%
+    mutate(epsilon=this_eps) %>%
+    melt(id.vars="epsilon") %>%
+    rename(parameter=variable, imp_diff=value)
+}
 
-imp_diff <- imp_results$imp_means - colMeans(draws_mat)
+imp_df <- do.call(rbind, imp_list) %>%
+  inner_join(filter(tidy_results$sens_df, hyperparameter=="R.3.3"), by="parameter")
+
+dev.new()
+ggplot(filter(imp_df, parameter %in% sensitive_params[1:5])) +
+  geom_point(aes(x=epsilon, y=imp_diff, color=parameter)) +
+  geom_line(aes(x=epsilon, y=mean_sensitivity * epsilon, color=parameter))
+
+# Plot nonlinearities in the importance sampling.
+dev.new()
+ggplot(filter(imp_df, parameter %in% sensitive_params[21:30], grepl("alpha", parameter))) +
+  geom_point(aes(x=epsilon, y=imp_diff, color=parameter)) +
+  geom_line(aes(x=epsilon, y=mean_sensitivity * epsilon, color=parameter))
+
 
 {
   cat("Imp. samp. difference:\t\t", imp_diff, "\n")
@@ -104,6 +133,7 @@ imp_diff <- imp_results$imp_means - colMeans(draws_mat)
   cat("Eff. # of importance samples:\t", imp_results$eff_num_imp_samples, "\n")
   # cat("Imp. samp. approx. err:\t\t", 2 * imp_se, "\n")
 }
+
 
 dev.new()
 plot(imp_diff, sens_result$sens_mat[perturb_par, , drop=FALSE] * epsilon); abline(0, 1)
