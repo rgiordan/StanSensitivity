@@ -37,7 +37,7 @@ NormalizeSensitivityMatrix <- function(sens_mat, draws_mat) {
 # the variance of the sensitivity estimates.
 BootstrapSensitivityMatrix <- function(
     draws_mat, grad_mat, alpha=0.1, num_boot=200) {
-  cat("Bootstrapping sensitivity matrix.")
+  print("Bootstrapping sensitivity matrix.")
   prog_bar <- txtProgressBar(min=1, max=num_boot, style=3)
   num_boot <- 200
   sens_mat_dim <- c(nrow(grad_mat), ncol(draws_mat))
@@ -61,9 +61,9 @@ BootstrapSensitivityMatrix <- function(
 
 GetArrayQuantiles <- function(sens_mat_array, alpha=0.1) {
   lower <- apply(sens_mat_array, MARGIN=c(2, 3),
-                 function(x) { quantile(x, alpha) })
+                 function(x) { quantile(x, alpha, na.rm=TRUE) })
   upper <- apply(sens_mat_array, MARGIN=c(2, 3),
-                 function(x) { quantile(x, 1 - alpha) })
+                 function(x) { quantile(x, 1 - alpha, na.rm=TRUE) })
   return(list(lower=lower, upper=upper))
 }
 

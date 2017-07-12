@@ -5,8 +5,8 @@ data {
   int<lower=1, upper=I> ii[N];  // item for n
   int<lower=1, upper=J> jj[N];  // person for n
   int<lower=0, upper=1> y[N];   // correctness for n
-}
-hyperparameters {
+
+  // Hyperparameters:
   // Original values follow in comments.
   real lkj_concentration;  // 4
   real mu_loc; // 0
@@ -48,3 +48,4 @@ generated quantities {
   corr_matrix[2] Omega;
   Omega = multiply_lower_tri_self_transpose(L_Omega);
 }
+

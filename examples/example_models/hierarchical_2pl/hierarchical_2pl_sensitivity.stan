@@ -6,7 +6,14 @@ data {
   int<lower=1, upper=J> jj[N];  // person for n
   int<lower=0, upper=1> y[N];   // correctness for n
 }
-hyperparameters {
+parameters {
+  vector[J] theta;              // abilities
+  vector[2] xi[I];              // alpha/beta pair vectors
+  vector[2] mu;                 // vector for alpha/beta means
+  vector<lower=0>[2] tau;       // vector for alpha/beta residual sds
+  cholesky_factor_corr[2] L_Omega;
+
+  // Hyperparameters:
   // Original values follow in comments.
   real lkj_concentration;  // 4
   real mu_loc; // 0
@@ -15,13 +22,6 @@ hyperparameters {
   real tau_loc; // 0.1
   real theta_loc; // 0
   real theta_scale; // 1
-}
-parameters {
-  vector[J] theta;              // abilities
-  vector[2] xi[I];              // alpha/beta pair vectors
-  vector[2] mu;                 // vector for alpha/beta means
-  vector<lower=0>[2] tau;       // vector for alpha/beta residual sds
-  cholesky_factor_corr[2] L_Omega;
 }
 transformed parameters {
   vector[I] alpha;
@@ -48,3 +48,4 @@ generated quantities {
   corr_matrix[2] Omega;
   Omega = multiply_lower_tri_self_transpose(L_Omega);
 }
+
