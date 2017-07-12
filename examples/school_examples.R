@@ -112,13 +112,17 @@ for (this_eps in seq(0, epsilon, length.out=eps_length)) {
     rename(parameter=variable, imp_diff=value)
 }
 
+
 imp_df <- do.call(rbind, imp_list) %>%
   inner_join(filter(tidy_results$sens_df, hyperparameter=="R.3.3"), by="parameter")
+
+max_eps <- max(unique(imp_df$epsilon)[unlist(num_eff_samples_list) > 500])
 
 dev.new()
 ggplot(filter(imp_df, parameter %in% sensitive_params[1:5])) +
   geom_point(aes(x=epsilon, y=imp_diff, color=parameter)) +
-  geom_line(aes(x=epsilon, y=mean_sensitivity * epsilon, color=parameter))
+  geom_line(aes(x=epsilon, y=mean_sensitivity * epsilon, color=parameter)) +
+  geom_vline(aes(xintercept=max_eps))
 
 # Plot nonlinearities in the importance sampling.
 dev.new()
