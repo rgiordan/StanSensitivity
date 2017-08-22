@@ -78,7 +78,7 @@ EvaluateAtDraws <- function(
     grad_mat <- matrix()
   }
 
-  cat("Evaluating model at the MCMC draws.\n")
+  cat("Evaluating sensitivity model at the MCMC draws.\n")
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
     setTxtProgressBar(prog_bar, value=n)
