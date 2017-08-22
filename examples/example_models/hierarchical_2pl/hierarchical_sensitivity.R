@@ -72,7 +72,9 @@ ggplot(filter(sens_norm_df, abs(mean_sensitivity) > 1, parameter_base %in% prima
   geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
                     ymax=upper_sensitivity, group=hyperparameter),
                 position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Normalized local sensitivity") +
+  ggtitle(sprintf("Hyperparameter sensitivity for model %s", sub(".*/", "", model_name)))
 
 sensitive_params <- 
   filter(sens_norm_df, abs(mean_sensitivity) > 1, parameter_base %in% primary_parameters)$parameter
@@ -152,7 +154,6 @@ mcmc_diff_df <-
   mutate(mcmc_diff_df,
          top_change=abs(mean_diff) > quantile(abs(mean_diff), 0.9))
 
-dev.new()
 ggplot(filter(mcmc_diff_df, parameter %in% sensitive_params)) +
   geom_point(aes(y=mean_diff, x=mean_sensitivity * epsilon, color=parameter), size=3) +
   geom_errorbar(aes(ymin=mean_diff - 2 * se, ymax=mean_diff + 2 * se, x=mean_sensitivity * epsilon)) +
