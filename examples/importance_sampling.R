@@ -1,6 +1,6 @@
 if (FALSE) {
   library(devtools)
-  install_local("/home/rgiordan/Documents/git_repos/StanSensitivity/rstansensitivity", force=TRUE)  
+  install_local("/home/rgiordan/Documents/git_repos/StanSensitivity/rstansensitivity", force=TRUE)
 }
 
 #########################################
@@ -36,7 +36,7 @@ if (FALSE) {
 
 imp_diff <- imp_results$imp_means - colMeans(draws_mat)
 
-eff_num_samples <- summary(sampling_result)$summary[, "n_eff"] 
+eff_num_samples <- summary(sampling_result)$summary[, "n_eff"]
 imp_se <- summary(sampling_result)$summary[, "se_mean"] *
           sqrt(nrow(draws_mat) / imp_results$eff_num_imp_samples)
 

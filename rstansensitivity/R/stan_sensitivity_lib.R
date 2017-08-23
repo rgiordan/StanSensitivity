@@ -67,15 +67,15 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
 # Evaluate at draws using the hyperparameters in sens_par_list.
 EvaluateAtDraws <- function(
-    sampling_result, draws_mat, stan_sensitivity_list, sens_par_list,
+    sampling_result, stan_sensitivity_list, sens_par_list,
     compute_grads=FALSE) {
 
-  num_warmup_samples <- attr(sampling_result, "sim")$warmup
+  num_warmup_samples <- sampling_result@sim$warmup
+  num_samples <- sampling_result@sim$iter - num_warmup_samples
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   sens_param_names <- stan_sensitivity_list$sens_param_names
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
-  num_samples <- nrow(draws_mat)
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
     grad_mat <- matrix(NA, length(sens_param_names), num_samples)
@@ -120,7 +120,7 @@ GetStanSensitivityFromModelFit <- function(
 
     # Get the model gradients with respect to the hyperparameters (and parameters).
     model_at_draws <- EvaluateAtDraws(
-            sampling_result, draws_mat, stan_sensitivity_list,
+            sampling_result, stan_sensitivity_list,
             stan_sensitivity_list$sens_par_list, compute_grads=TRUE)
 
     param_names <- stan_sensitivity_list$param_names
@@ -150,12 +150,12 @@ GetImportanceSamplingFromModelFit <- function(
 
     if (is.null(lp_vec)) {
         lp_vec <- EvaluateAtDraws(
-            sampling_result, draws_mat, stan_sensitivity_list,
+            sampling_result, stan_sensitivity_list,
             stan_sensitivity_list$sens_par_list, compute_grads=FALSE)$lp_vec
     }
     # Get the model gradients with respect to the hyperparameters (and parameters).
     imp_lp_vec <- EvaluateAtDraws(
-            sampling_result, draws_mat, stan_sensitivity_list,
+            sampling_result, stan_sensitivity_list,
             imp_sens_par_list, compute_grads=FALSE)$lp_vec
 
     imp_weights <- exp(imp_lp_vec - lp_vec)
