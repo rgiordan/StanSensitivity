@@ -16,16 +16,20 @@ GenerateSensitivityFromModel <- function(
 
 
 # Compile the sensitivity model and get a stanfit object and related information.
-GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
+GetStanSensitivityModel <- function(model_name, stan_data) {
     # Use a "model" with no model block to get a valid parameter list with
     # get_inits.  This way there is no worry about invalid intializations.
     model_sens_params <-
         stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
                    data=stan_data, algorithm="Fixed_param",
                    iter=1, chains=1)
+    model_params <-
+        stan(paste(model_name, "_generated.stan", sep=""),
+                   data=stan_data, algorithm="Fixed_param",
+                   iter=1, chains=1)
 
     sens_par_list <- get_inits(model_sens_params)[[1]]
-    model_par_list <- get_inits(sampling_result)[[1]]
+    model_par_list <- get_inits(model_params)[[1]]
 
     # Get the sensitivity parameters in list form.
     for (par in names(model_par_list)) {
@@ -46,13 +50,14 @@ GetStanSensitivityModel <- function(sampling_result, model_name, stan_data) {
 
     # These names help sort through the vectors of sensitivity.
     param_names <-
-        sampling_result@.MISC$stan_fit_instance$unconstrained_param_names(
+        model_params@.MISC$stan_fit_instance$unconstrained_param_names(
             FALSE, FALSE)
     sens_param_names <-
         model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(
             FALSE, FALSE)
 
     return(list(model_sens_fit=model_sens_fit,
+                model_params=model_params,
                 model_sens_params=model_sens_params,
                 param_names=param_names,
                 sens_param_names=sens_param_names,

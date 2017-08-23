@@ -37,7 +37,7 @@ print(summary(sampling_result))
 # Get the sensitivity model and sensitivity.
 
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
+stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
 sens_time <- Sys.time()
 sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
 sens_time <- Sys.time()- sens_time
@@ -97,11 +97,11 @@ eps_length <- 20
 for (this_eps in seq(0, epsilon, length.out=eps_length)) {
   imp_sens_par_list <- stan_sensitivity_list$sens_par_list
   imp_sens_par_list[["R"]][3, 3] <- imp_sens_par_list[["R"]][3, 3] + this_eps
-  
+
   imp_results <- GetImportanceSamplingFromModelFit(
     sampling_result, draws_mat, stan_sensitivity_list,
     imp_sens_par_list, lp_vec=sens_result$lp_vec)
-  
+
   imp_diff <- imp_results$imp_means - colMeans(draws_mat)
   num_eff_samples_list[[length(num_eff_samples_list) + 1]] <-
     imp_results$eff_num_imp_samples
@@ -154,7 +154,7 @@ perturb_se <-
   data.frame(t(summary(sampling_result_perturb)$summary[, "se_mean"])) %>%
   mutate(method="mcmc") %>%
   melt(id.vars=c("method")) %>%
-  rename(parameter=variable, se=value)  
+  rename(parameter=variable, se=value)
 
 mcmc_diff <- colMeans(draws_mat_perturb) - colMeans(draws_mat)
 mcmc_diff_df <-
@@ -201,7 +201,3 @@ ggplot(filter(mcmc_diff_df, parameter %in% top_misses)) +
   cat("Imp. samp. approx. err:\t\t", 2 * imp_se, "\n")
   cat("MCMC approx. err:\t\t", 2 * perturb_se, "\n")
 }
-
-
-
-

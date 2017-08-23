@@ -45,7 +45,7 @@ mcmc_time <- Sys.time() - mcmc_time
 # Sensitivity
 
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-stan_sensitivity_list <- GetStanSensitivityModel(sampling_result, model_name, stan_data)
+stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
 
 sens_time <- Sys.time()
 sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
@@ -76,7 +76,7 @@ ggplot(filter(sens_norm_df, abs(mean_sensitivity) > 1, parameter_base %in% prima
   ylab("Normalized local sensitivity") +
   ggtitle(sprintf("Hyperparameter sensitivity for model %s", sub(".*/", "", model_name)))
 
-sensitive_params <- 
+sensitive_params <-
   filter(sens_norm_df, abs(mean_sensitivity) > 1, parameter_base %in% primary_parameters)$parameter
 
 ####################################
@@ -101,11 +101,11 @@ eps_length <- 5
 for (this_eps in seq(0, epsilon, length.out=eps_length)) {
   imp_sens_par_list <- stan_sensitivity_list$sens_par_list
   imp_sens_par_list[[perturb_par]] <- imp_sens_par_list[[perturb_par]] + this_eps
-  
+
   imp_results <- GetImportanceSamplingFromModelFit(
     sampling_result, draws_mat, stan_sensitivity_list,
     imp_sens_par_list, lp_vec=sens_result$lp_vec)
-  
+
   imp_diff <- imp_results$imp_means - colMeans(draws_mat)
   num_eff_samples_list[[length(num_eff_samples_list) + 1]] <-
     imp_results$eff_num_imp_samples
@@ -139,7 +139,7 @@ perturb_se <-
   data.frame(t(summary(sampling_result_perturb)$summary[, "se_mean"])) %>%
   mutate(method="mcmc") %>%
   melt(id.vars="method") %>%
-  rename(parameter=variable, se=value)  
+  rename(parameter=variable, se=value)
 
 mcmc_diff <- colMeans(draws_mat_perturb) - colMeans(draws_mat)
 mcmc_diff_df <-
@@ -160,5 +160,3 @@ ggplot(filter(mcmc_diff_df, parameter %in% sensitive_params)) +
   geom_errorbarh(aes(y=mean_diff, x=mean_sensitivity * epsilon,
                      xmin=lower_sensitivity * epsilon, xmax=upper_sensitivity * epsilon)) +
   geom_abline(aes(slope=1, intercept=0))
-
-

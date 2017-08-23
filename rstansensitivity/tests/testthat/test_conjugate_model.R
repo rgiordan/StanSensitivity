@@ -118,7 +118,7 @@ test_that("conjugate_model_works", {
   expect_equal(post_sd, sd(draws_mat[, "mu"]), tolerance=3 * post_se)
 
   # Check the sensitivity.
-  stan_sensitivity_list <- GetStanSensitivityModel(result, model_name, stan_data)
+  stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
   sens_result <- GetStanSensitivityFromModelFit(
     result, draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
   sens_mat <- sens_result$sens_mat
