@@ -10,8 +10,8 @@ example_directory <- file.path(
 if (TRUE) {
   base_model_name <- file.path(
       example_directory, "negative_binomial/negative_binomial.stan")
-  num_warmup_samples <- 50000
-  num_samples <- 50000
+  num_warmup_samples <- 5000
+  num_samples <- 5000
 }
 
 
@@ -72,7 +72,8 @@ ggplot(filter(tidy_results$sens_norm_df, !grepl("weight", hyperparameter))) +
   geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
                     ymax=upper_sensitivity, group=hyperparameter),
                 position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Sensitivity / standard deviation")
 
 
 ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
