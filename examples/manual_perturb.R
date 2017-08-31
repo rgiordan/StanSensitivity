@@ -6,6 +6,7 @@ library(reshape2)
 ####################################
 # Perturb and re-fit with importance sampling.
 
+num_samples <- num_warmup_samples <- 50000
 GetPosterior <- function(stan_data) {
   result <- sampling(model, data=stan_data, chains=1,
                      iter=(num_samples + num_warmup_samples),
@@ -14,7 +15,7 @@ GetPosterior <- function(stan_data) {
 }
 
 perturb_par <- "cauchy_scale_alpha"
-epsilon <- 10.0
+epsilon <- 4 * stan_data[[perturb_par]]
 
 # Importance sampling.
 se_mean <- summary(sampling_result)$summary[, "se_mean"]
@@ -33,23 +34,6 @@ for (this_eps in eps_vec) {
   stan_data_perturb <- stan_data
   stan_data_perturb[[perturb_par]] <- stan_data_perturb[[perturb_par]] + this_eps
   post_list[[length(post_list) + 1]] <- GetPosterior(stan_data_perturb)
-  
-  # imp_sens_par_list <- stan_sensitivity_list$sens_par_list
-  # imp_sens_par_list[[perturb_par]] <- imp_sens_par_list[[perturb_par]] + this_eps
-  # 
-  # imp_results <- GetImportanceSamplingFromModelFit(
-  #   sampling_result, draws_mat, stan_sensitivity_list,
-  #   imp_sens_par_list, lp_vec=sens_result$lp_vec)
-  # 
-  # imp_diff <- imp_results$imp_means - colMeans(draws_mat)
-  # num_eff_samples_list[[length(num_eff_samples_list) + 1]] <-
-  #   imp_results$eff_num_imp_samples
-  # imp_list[[length(imp_list) + 1]] <-
-  #   data.frame(t(imp_diff)) %>%
-  #   mutate(epsilon=this_eps) %>%
-  #   melt(id.vars="epsilon") %>%
-  #   rename(parameter=variable, imp_diff=value)
-  
 }
 
 
@@ -84,6 +68,10 @@ comparison_df <-
          true_sensitivity_se=sqrt(se_mean^2 + se_mean_original^2)) %>%
   filter(epsilon != 0.0)
 
+graph_title <- sprintf("Sensitivity of posterior means as %s\nranges from %0.1f to %0.1f",
+                       perturb_par,
+                       stan_data_perturb[[perturb_par]],
+                       stan_data_perturb[[perturb_par]] + epsilon)
 ggplot(comparison_df) +
   geom_point(aes(y=epsilon * mean_sensitivity, x=true_sensitivity, color=parameter), size=3) +
   geom_errorbarh(aes(y=epsilon * mean_sensitivity,
@@ -91,10 +79,34 @@ ggplot(comparison_df) +
                      xmin=true_sensitivity - 2 * true_sensitivity_se,
                      xmax=true_sensitivity + 2 * true_sensitivity_se,
                     color=parameter)) +
-  geom_abline(aes(slope=1, intercept=0))
+  geom_abline(aes(slope=1, intercept=0)) +
+  ylab("Linear approximation sensitivity") +
+  xlab("Actual sensitivity") +
+  ggtitle(graph_title)
+
+
+# Plot the posteriors
+original_points <- as.data.frame(post_list[[1]])
+perturbed_points <- as.data.frame(post_list[[length(post_list)]])
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################
+# old:
 
 max_eps <- max(unique(imp_df$epsilon)[unlist(num_eff_samples_list) > 500])
 
@@ -102,7 +114,6 @@ ggplot(filter(imp_df, parameter %in% sensitive_params[1:10])) +
   geom_point(aes(x=epsilon, y=imp_diff, color=parameter)) +
   geom_line(aes(x=epsilon, y=mean_sensitivity * epsilon, color=parameter)) +
   geom_vline(aes(xintercept=max_eps))
-
 
 
 # Re-run MCMC
@@ -179,4 +190,21 @@ pert_mat[, param_names]
 sens_mat[, param_names] * epsilon
 
 
+
+
+# imp_sens_par_list <- stan_sensitivity_list$sens_par_list
+# imp_sens_par_list[[perturb_par]] <- imp_sens_par_list[[perturb_par]] + this_eps
+# 
+# imp_results <- GetImportanceSamplingFromModelFit(
+#   sampling_result, draws_mat, stan_sensitivity_list,
+#   imp_sens_par_list, lp_vec=sens_result$lp_vec)
+# 
+# imp_diff <- imp_results$imp_means - colMeans(draws_mat)
+# num_eff_samples_list[[length(num_eff_samples_list) + 1]] <-
+#   imp_results$eff_num_imp_samples
+# imp_list[[length(imp_list) + 1]] <-
+#   data.frame(t(imp_diff)) %>%
+#   mutate(epsilon=this_eps) %>%
+#   melt(id.vars="epsilon") %>%
+#   rename(parameter=variable, imp_diff=value)
 
