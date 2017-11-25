@@ -7,7 +7,7 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
-if (FALSE) {
+if (TRUE) {
   base_model_name <- file.path(
       example_directory, "negative_binomial/negative_binomial.stan")
   num_warmup_samples <- 5000
@@ -15,7 +15,7 @@ if (FALSE) {
 }
 
 
-if (TRUE) {
+if (FALSE) {
   base_model_name <- file.path(
       example_directory, "normal_censored/normal_censored.stan")
   num_warmup_samples <- 5000
