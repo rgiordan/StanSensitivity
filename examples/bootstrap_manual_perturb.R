@@ -2,13 +2,22 @@
 # This is intended to be run after run_examples and manual_perturb on a model that
 # measures sensitivity to data weights.
 
+GetPosterior <- function(stan_data) {
+  sampling_result <- sampling(
+    model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+  return(summary(sampling_result)$summary)  
+}
+
 ###########################
 # Compare with bootstrap sampling.
+sens_mat <- sens_result$sens_mat
+param_names <- colnames(sens_mat)
+param_means <- colMeans(draws_mat)
 
 weight_rows <- grepl("weights", rownames(sens_mat))
 weight_sens <- sens_mat[weight_rows, param_names, drop=FALSE]
 
-num_boot <- 50
+num_boot <- 200
 num_samples <- 1000 # Number of MCMC samples
 
 mean_boot_lr <- matrix(NA, num_boot, length(param_names))
@@ -40,21 +49,22 @@ for (b in 1:num_boot) {
   se_boot[b, ] <- post[param_names, "se_mean"]
 }
 
-mean_boot_lr_df <-
-  data.frame(mean_boot_lr) %>%
-  mutate(draw=1:n()) %>%
-  melt(id.vars="draw") %>%
-  mutate(method="linear")
-
 mean_boot_df <-
-  data.frame(mean_boot) %>%
-  mutate(draw=1:n()) %>%
-  melt(id.vars="draw") %>%
-  mutate(method="mcmc")
+  rbind(
+    data.frame(mean_boot) %>%
+      mutate(draw=1:n()) %>%
+      melt(id.vars="draw") %>%
+      mutate(method="mcmc")
+,
+  data.frame(mean_boot_lr) %>%
+    mutate(draw=1:n()) %>%
+    melt(id.vars="draw") %>%
+    mutate(method="linear")
+  ) %>% filter(variable != "lp__")
 
 boot_df <-
-  rbind(mean_boot_df, mean_boot_lr_df) %>%
-  dcast(draw + variable ~ method)
+  dcast(mean_boot_df, draw + variable ~ method) %>%
+  filter(variable != "lp__")
 
 ggplot(boot_df) +
   geom_point(aes(x=mcmc, y=linear)) +
@@ -63,9 +73,20 @@ ggplot(boot_df) +
   xlab("Bootstrapped posterior mean") +
   ylab("Linear approximate bootstrapped posterior mean")
 
-plot(mean_boot, mean_boot_lr); abline(0, 1)
-print(mcmc_time)
-print(lr_time)
+ggplot(boot_df) +
+  geom_density(aes(x=mcmc, color="Full bootstrap"), n=50, lwd=2) +
+  geom_density(aes(x=linear, color="Linear bootstrap"), n=50, lwd=2)
+
+method_labeller <- function(method) {
+  return(ifelse(method == "linear", "Linear bootstrap", "Full bootstrap"))
+}
+
+ggplot(mean_boot_df) +
+  geom_histogram(aes(x=value, color=variable), lwd=1) +
+  facet_grid(~ method, labeller=as_labeller(method_labeller))
+
+cat("Linear response time: ", as.numeric(lr_time, units="secs"))
+cat("Bootstrap time: ", as.numeric(mcmc_time, units="secs"))
 
 
 #################
