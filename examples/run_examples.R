@@ -47,6 +47,7 @@ sampling_result <- sampling(
 mcmc_time <- Sys.time() - mcmc_time
 print(summary(sampling_result))
 
+
 ##################################
 # Get the sensitivity model and sensitivity.
 
@@ -61,25 +62,10 @@ sens_time <- Sys.time()- sens_time
 ##################################
 # Inspect the results.
 
-# Warning: the uncertainty estimates on the sensitivity are currently
-# underestimated, as they do not take into account autocorrelation in the
-# MCMC chain.
 tidy_results <- GetTidyResult(draws_mat, sens_result)
 
-ggplot(filter(tidy_results$sens_norm_df, !grepl("weight", hyperparameter))) +
-  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
-           stat="identity", position="dodge") +
-  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
-                    ymax=upper_sensitivity, group=hyperparameter),
-                position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  ylab("Sensitivity / standard deviation")
+PlotSensitivities(tidy_results$sens_norm_df) +
+  ggtitle("Normalized sensitivities")
 
-
-ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
-  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
-           stat="identity", position="dodge") +
-  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
-                    ymax=upper_sensitivity, group=hyperparameter),
-                position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+PlotSensitivities(tidy_results$sens_df) +
+  ggtitle("Sensitivities")

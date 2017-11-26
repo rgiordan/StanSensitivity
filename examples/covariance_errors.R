@@ -318,14 +318,22 @@ sens_list <- foreach(sim=1:num_sims) %dopar% {
   return(sens_result)
 }
 
-fix_mean <- FALSE
 cov_se_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
   sens_result <- sens_list[[sim]]
   draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
   grad_mat <- sens_result$grad_mat 
-  return(GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean=fix_mean))
+  return(GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean=FALSE))
 }
+
+cov_se_fix_list <- foreach(sim=1:num_sims) %dopar% {
+  sampling_result <- sampling_list[[sim]]
+  sens_result <- sens_list[[sim]]
+  draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+  grad_mat <- sens_result$grad_mat 
+  return(GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean=TRUE))
+}
+
 
 cov_norm_se_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
@@ -339,6 +347,7 @@ cov_norm_se_list <- foreach(sim=1:num_sims) %dopar% {
 cov_array <- simplify2array(lapply(sens_list, function(sens_result) { sens_result$sens_mat }))
 cov_sd <- apply(cov_array, 1:2, sd)
 cov_sd / apply(simplify2array(cov_se_list), 1:2, median)
+cov_sd / apply(simplify2array(cov_se_fix_list), 1:2, median)
 apply(simplify2array(cov_se_list), 1:2, sd) / apply(simplify2array(cov_se_list), 1:2, median)
 
 
