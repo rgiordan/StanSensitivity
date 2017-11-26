@@ -2,6 +2,22 @@ library(rstan)
 library(dplyr)
 library(reshape2)
 
+
+#' Generate stan models for sensitivity calculations from a model with a
+#' hyperparameters{} block.
+#'
+#' @param base_model_name The name of the model with a hyperparameters block,
+#' including the .stan suffix.
+#' @param python_script The location of the generate_models.py from this
+#' repository.
+#' @return The \code{model_name} which can be passed as an argument into other
+#' functions in this library.  The function also generates the sensitivity model
+#' files in the same location as the original base model.
+#' @export
+#' @examples
+#' GenerateSensitivityFromModel(
+#'     "models/my_model.stan",
+#'     "~/git_repos/StanSensitivity/python/generate_models.py")
 GenerateSensitivityFromModel <- function(
         base_model_name,
         python_script="StanSensitivity/python/generate_models.py") {
