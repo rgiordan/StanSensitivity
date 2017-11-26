@@ -144,28 +144,28 @@ GetStanSensitivityFromModelFit <- function(
 }
 
 
-# GetImportanceSamplingFromModelFit <- function(
-#     sampling_result, draws_mat, stan_sensitivity_list,
-#     imp_sens_par_list, lp_vec=NULL) {
-#
-#     if (is.null(lp_vec)) {
-#         lp_vec <- EvaluateAtDraws(
-#             sampling_result, stan_sensitivity_list,
-#             stan_sensitivity_list$sens_par_list, compute_grads=FALSE)$lp_vec
-#     }
-#     # Get the model gradients with respect to the hyperparameters (and parameters).
-#     imp_lp_vec <- EvaluateAtDraws(
-#             sampling_result, stan_sensitivity_list,
-#             imp_sens_par_list, compute_grads=FALSE)$lp_vec
-#
-#     imp_weights <- exp(imp_lp_vec - lp_vec)
-#     imp_weights <- imp_weights / sum(imp_weights)
-#
-#     eff_num_imp_samples <- 1 / sum(imp_weights ^ 2)
-#
-#     imp_means <- colSums(imp_weights * draws_mat)
-#
-#     return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
-#                 eff_num_imp_samples=eff_num_imp_samples,
-#                 imp_means=imp_means))
-# }
+GetImportanceSamplingFromModelFit <- function(
+    sampling_result, draws_mat, stan_sensitivity_list,
+    imp_sens_par_list, lp_vec=NULL) {
+
+    if (is.null(lp_vec)) {
+        lp_vec <- EvaluateAtDraws(
+            sampling_result, stan_sensitivity_list,
+            stan_sensitivity_list$sens_par_list, compute_grads=FALSE)$lp_vec
+    }
+    # Get the model gradients with respect to the hyperparameters (and parameters).
+    imp_lp_vec <- EvaluateAtDraws(
+            sampling_result, stan_sensitivity_list,
+            imp_sens_par_list, compute_grads=FALSE)$lp_vec
+
+    imp_weights <- exp(imp_lp_vec - lp_vec)
+    imp_weights <- imp_weights / sum(imp_weights)
+
+    eff_num_imp_samples <- 1 / sum(imp_weights ^ 2)
+
+    imp_means <- colSums(imp_weights * draws_mat)
+
+    return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
+                eff_num_imp_samples=eff_num_imp_samples,
+                imp_means=imp_means))
+}
