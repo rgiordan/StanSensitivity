@@ -27,7 +27,7 @@ if (FALSE) {
 python_script <- file.path(Sys.getenv("GIT_REPO_LOC"),
                            "StanSensitivity/python/generate_models.py")
 model_name <- GenerateSensitivityFromModel(
-    base_model_name, python_script=python_script)
+  base_model_name, python_script=python_script)
 
 ##################################
 # Compile and run the base model.
@@ -43,9 +43,10 @@ stan_data <- as.list(stan_data)
 # The script currently assumes the same number of warm-up draws as final samples.
 mcmc_time <- Sys.time()
 sampling_result <- sampling(
-    model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+  model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
 mcmc_time <- Sys.time() - mcmc_time
 print(summary(sampling_result))
+
 
 ##################################
 # Get the sensitivity model and sensitivity.
@@ -54,32 +55,17 @@ draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_model <- GetStanSensitivityModel(model_name, stan_data)
 sens_time <- Sys.time()
 sens_result <- GetStanSensitivityFromModelFit(
-    sampling_result, draws_mat, stan_sensitivity_model)
+  sampling_result, draws_mat, stan_sensitivity_model)
 sens_time <- Sys.time()- sens_time
 
 
 ##################################
 # Inspect the results.
 
-# Warning: the uncertainty estimates on the sensitivity are currently
-# underestimated, as they do not take into account autocorrelation in the
-# MCMC chain.
 tidy_results <- GetTidyResult(draws_mat, sens_result)
 
-ggplot(filter(tidy_results$sens_norm_df, !grepl("weight", hyperparameter))) +
-  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
-           stat="identity", position="dodge") +
-  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
-                    ymax=upper_sensitivity, group=hyperparameter),
-                position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  ylab("Sensitivity / standard deviation")
+PlotSensitivities(tidy_results$sens_norm_df) +
+  ggtitle("Normalized sensitivities")
 
-
-ggplot(filter(tidy_results$sens_df, !grepl("weight", hyperparameter))) +
-  geom_bar(aes(x=parameter, y=mean_sensitivity, fill=hyperparameter),
-           stat="identity", position="dodge") +
-  geom_errorbar(aes(x=parameter, ymin=lower_sensitivity,
-                    ymax=upper_sensitivity, group=hyperparameter),
-                position=position_dodge(0.9), width=0.2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+PlotSensitivities(tidy_results$sens_df) +
+  ggtitle("Sensitivities")
