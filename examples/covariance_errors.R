@@ -3,13 +3,17 @@ library(coda)
 library(doParallel)
 registerDoParallel(cores=7)
 
-DrawSamples <- function(num_draws) {
+DrawSamples <- function(num_draws, draws_only=TRUE) {
   num_samples <- num_warmup_samples <- num_draws
   sampling_result <- sampling(
     model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples),
     verbose=F, refresh=-1)
-  draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-  return(draws_mat)  
+  if (draws_only) {
+    draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+    return(draws_mat)  
+  } else {
+    return(sampling_result)
+  }
 }
 
 GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
@@ -25,16 +29,6 @@ GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
     grad_g <- c(1, -1 * y_mean, -1 * x_mean)
     g_se <- as.numeric(sqrt(t(grad_g) %*% arg_cov_mat %*% grad_g / nrow(arg_draws)))
   }
-  return(g_se)
-}
-
-GetWorstCaseCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
-  x_mean <- mean(x_draws)
-  y_mean <- mean(y_draws)
-  g1_draws <- x_draws * y_draws - x_mean * y_mean
-  ######### Stopped here.
-  n_eff <-coda::effectiveSize(g_draws)
-  g_se <- sd(g_draws) / sqrt(n_eff)
   return(g_se)
 }
 
@@ -65,6 +59,8 @@ num_sims <- 500
 draws_list <- foreach(sim=1:num_sims) %dopar% {
   DrawSamples(2000)
 }
+
+
 
 ##############
 # Variances
@@ -137,9 +133,53 @@ g_univariate_sd <- sd(g_draws) / sqrt(n_eff)
 
 
 
+####################
+# Sensitivity covariances
 
+grad_mat <- sens_result$grad_mat
+head(t(grad_mat))
 
+sens_param_names <- rownames(grad_mat)
+param_names <- colnames(draws_mat)
 
+GetSensitivityStandardErrors <- function(draws_mat, grad_mat, fix_mean=FALSE) {
+  cov_se_mat <- matrix(NA, nrow(grad_mat), ncol(draws_mat))
+  for (par_ind in 1:length(param_names)) {
+    for (grad_ind in 1:length(sens_param_names)) {
+      par_draws <- draws_mat[, param_names[par_ind]]
+      grad_draws <- grad_mat[sens_param_names[grad_ind], ]
+      cov_se_mat[grad_ind, par_ind] <-
+        GetCovarianceSE(par_draws, grad_draws, fix_mean=fix_mean)
+    }
+  }
+  return(cov_se_mat)
+}
+
+num_sims <- 500
+sampling_list <- foreach(sim=1:num_sims) %dopar% {
+  DrawSamples(2000, draws_only=FALSE)
+}
+
+sens_list <- foreach(sim=1:num_sims) %dopar% {
+  sampling_result <- sampling_list[[sim]]
+  draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+  sens_result <- GetStanSensitivityFromModelFit(
+    sampling_result, draws_mat, stan_sensitivity_model)
+  return(sens_result)
+}
+
+cov_se_list <- foreach(sim=1:num_sims) %dopar% {
+  sampling_result <- sampling_list[[sim]]
+  sens_result <- sens_list[[sim]]
+  draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+  grad_mat <- sens_result$grad_mat 
+  return(GetSensitivityStandardErrors(draws_mat, grad_mat))
+}
+
+cov_array <- simplify2array(lapply(sens_list, function(sens_result) { sens_result$sens_mat }))
+cov_sd <- apply(cov_array, 1:2, sd)
+cov_sd / apply(simplify2array(cov_se_list), 1:2, median)
+apply(simplify2array(cov_se_list), 1:2, sd) / apply(simplify2array(cov_se_list), 1:2, median)
 
 
 
