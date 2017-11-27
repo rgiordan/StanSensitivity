@@ -1,3 +1,6 @@
+# This script demonstrates the basic usage of the rstansensitivity library
+# using the negative_binomial example.
+
 library(rstan)
 library(rstansensitivity)
 library(ggplot2)
@@ -23,9 +26,9 @@ stan_data <- new.env()
 source(paste(model_name, "data.R", sep="."), local=stan_data)
 stan_data <- as.list(stan_data)
 
-# For now, you must use chains=1 for now to avoid confusion with stan's get_inits.
+# For now, rstansensitivity only supports one chain.
 sampling_result <- sampling(
-  model, data=stan_data, chains=4, iter=(num_samples + num_warmup_samples))
+  model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
 print(sampling_result)
 
 
@@ -44,4 +47,3 @@ grid.arrange(
     ggtitle("Sensitivities")
   ,
   ncol=2)
-
