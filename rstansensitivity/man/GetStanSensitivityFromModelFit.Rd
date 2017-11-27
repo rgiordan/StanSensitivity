@@ -3,7 +3,7 @@
 \name{GetStanSensitivityFromModelFit}
 \alias{GetStanSensitivityFromModelFit}
 \title{Process the results of Stan samples and GetStanSensitivityModel into a
-sensitivity matrix.}
+sensitivity matrix.  Note that currently, only the first chain is supported.}
 \usage{
 GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_list)
 }
@@ -25,5 +25,5 @@ The result can be used directly, or passed to \code{GetTidyResult}.
 }
 \description{
 Process the results of Stan samples and GetStanSensitivityModel into a
-sensitivity matrix.
+sensitivity matrix.  Note that currently, only the first chain is supported.
 }
