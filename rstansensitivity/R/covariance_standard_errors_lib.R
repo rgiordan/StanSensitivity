@@ -60,6 +60,19 @@ GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
     as.numeric(sqrt(t(grad_g) %*% par_cov_mat %*% grad_g / nrow(par_draws))))
 }
 
+#' Estimate Monte Carlo standard errors for the sensitivity matrices using
+#' a normal approximation and the delta method.  These standard errors are
+#' based on what may be unrealistic assumptions, and should be interpreted with
+#' caution.
+#'
+#' @param draws_mat Parameter draws from \code{GetStanSensitivityFromModelFit}.
+#' @param grad_mat Gradients from \code{GetStanSensitivityFromModelFit}.
+#' @param fix_mean Experimental: estimate standard errors as if the means were
+#' known exactly.  Not recommended.
+#' @param normalized Compute standard errors for the normalized sensitivities.
+#' @return A matrix of the same dimensions as \code{sens_mat} containing
+#' estimates of the Monte Carlo standard errors of the sensitivities.
+#' @export
 GetSensitivityStandardErrors <- function(
     draws_mat, grad_mat, fix_mean=FALSE, normalized=FALSE) {
 

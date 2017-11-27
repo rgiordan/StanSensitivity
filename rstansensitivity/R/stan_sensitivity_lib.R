@@ -2,6 +2,22 @@ library(rstan)
 library(dplyr)
 library(reshape2)
 
+
+#' Generate stan models for sensitivity calculations from a model with a
+#' hyperparameters block.
+#'
+#' @param base_model_name The name of the model with a hyperparameters block,
+#' including the .stan suffix.
+#' @param python_script The location of the generate_models.py from this
+#' repository.
+#' @return The \code{model_name} which can be passed as an argument into other
+#' functions in this library.  The function also generates the sensitivity model
+#' files in the same location as the original base model.
+#' @export
+#' @examples
+#' GenerateSensitivityFromModel(
+#'     "models/my_model.stan",
+#'     "~/git_repos/StanSensitivity/python/generate_models.py")
 GenerateSensitivityFromModel <- function(
         base_model_name,
         python_script="StanSensitivity/python/generate_models.py") {
@@ -15,7 +31,19 @@ GenerateSensitivityFromModel <- function(
 }
 
 
-# Compile the sensitivity model and get a stanfit object and related information.
+#' Compile the sensitivity model and get a stanfit object and related
+#' information.
+#'
+#' @param model_name A full path to the base model name.
+#' For example, if the model with the \code{hyperparameter} block is named
+#' \code{/home/user/my_model.stan}, set \code{model_name} should be equal
+#' to \code{"/home/user/my_model"}
+#' @param stan_data The Stan data list (e.g., for the \code{data} argument of
+#' \code{stan::sampling})
+#' @return A list of Stan models and parameters names which can be passed to
+#' the \code{stan_sensitivity_list} argument of
+#' functions like code{GetStanSensitivityFromModelFit}.
+#' @export
 GetStanSensitivityModel <- function(model_name, stan_data) {
     # Use a "model" with no model block to get a valid parameter list with
     # get_inits.  This way there is no worry about invalid intializations.
@@ -87,6 +115,9 @@ EvaluateAtDraws <- function(
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
     setTxtProgressBar(prog_bar, value=n)
+
+    # We rely on get_inits to return the draws at iteration n in a form
+    # that is easy to parse.
     par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
     for (par in ls(par_list)) {
       # Note that get_inits is currently broken:
@@ -114,9 +145,25 @@ EvaluateAtDraws <- function(
 }
 
 
-# Process the results of GetStanSensitivityModel into a sensitivity matrix.
+#' Process the results of Stan samples and GetStanSensitivityModel into a
+#' sensitivity matrix.  Note that currently, only the first chain is supported.
+#'
+#' @param sampling_result The output of \code{stan::sampling}
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @return A list of matrices.  The elements of the list are
+#' \itemize{
+#'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
+#'     \item{sens_mat_normalized: }{The same quantities as \code{sens_mat}, but normalized by the posterior standard deviation.}
+#'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
+#'     \item{lp_vec: }{The log probability of the model at each draw.}
+#'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
+#' }
+#' The result can be used directly, or passed to \code{GetTidyResult}.
+#' @export
 GetStanSensitivityFromModelFit <- function(
-    sampling_result, draws_mat, stan_sensitivity_list) {
+    sampling_result, stan_sensitivity_list) {
+
+    draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 
     # Get the model gradients with respect to the hyperparameters (and parameters).
     model_at_draws <- EvaluateAtDraws(
@@ -140,10 +187,14 @@ GetStanSensitivityFromModelFit <- function(
     sens_mat_normalized <- NormalizeSensitivityMatrix(sens_mat, draws_mat)
 
     return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
-                grad_mat=grad_mat, lp_vec=model_at_draws$lp_vec))
+                grad_mat=grad_mat, lp_vec=model_at_draws$lp_vec,
+                draws_mat=draws_mat))
 }
 
 
+#' Use importance sampling to approximate means at different hyperparameter
+#' values.  Experimental use only.
+#' @export
 GetImportanceSamplingFromModelFit <- function(
     sampling_result, draws_mat, stan_sensitivity_list,
     imp_sens_par_list, lp_vec=NULL) {
