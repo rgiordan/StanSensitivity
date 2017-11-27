@@ -56,4 +56,3 @@ json_file <- file(mcmc_results_json_filename, "w")
 json_list <- toJSON(list(mcmc_results=sampling_result_json, stan_data=stan_data))
 write(json_list, file=json_file)
 close(json_file)
-

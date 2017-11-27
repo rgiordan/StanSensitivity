@@ -5,13 +5,13 @@ library(gridExtra)
 
 rstan_options(auto_write=TRUE)
 
-# Set this to be the appropriate location of the repo on your computer.
-example_directory <- file.path(
-  Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
+# Run from anywhere in the StanSensitivity repository.
+git_repo <- system("git rev-parse --show-toplevel", intern=TRUE)
+example_directory <- file.path(git_repo, "examples/example_models")
 
 model_name <- file.path(example_directory, "negative_binomial/negative_binomial")
-num_warmup_samples <- 5000
-num_samples <- 5000
+num_warmup_samples <- 10000
+num_samples <- 10000
 
 ##################################
 # Compile and run the base model.
@@ -24,11 +24,9 @@ source(paste(model_name, "data.R", sep="."), local=stan_data)
 stan_data <- as.list(stan_data)
 
 # For now, you must use chains=1 for now to avoid confusion with stan's get_inits.
-mcmc_time <- Sys.time()
 sampling_result <- sampling(
-  model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
-mcmc_time <- Sys.time() - mcmc_time
-print(summary(sampling_result))
+  model, data=stan_data, chains=4, iter=(num_samples + num_warmup_samples))
+print(sampling_result)
 
 
 ##################################

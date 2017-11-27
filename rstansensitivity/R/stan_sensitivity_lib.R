@@ -115,6 +115,9 @@ EvaluateAtDraws <- function(
   prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
   for (n in 1:num_samples) {
     setTxtProgressBar(prog_bar, value=n)
+
+    # We rely on get_inits to return the draws at iteration n in a form
+    # that is easy to parse.
     par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
     for (par in ls(par_list)) {
       # Note that get_inits is currently broken:
@@ -143,7 +146,7 @@ EvaluateAtDraws <- function(
 
 
 #' Process the results of Stan samples and GetStanSensitivityModel into a
-#' sensitivity matrix.
+#' sensitivity matrix.  Note that currently, only the first chain is supported.
 #'
 #' @param sampling_result The output of \code{stan::sampling}
 #' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
