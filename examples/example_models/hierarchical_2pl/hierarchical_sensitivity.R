@@ -48,7 +48,7 @@ draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
 
 sens_time <- Sys.time()
-sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_list)
 sens_time <- Sys.time()- sens_time
 
 
@@ -60,7 +60,7 @@ sens_time <- Sys.time()- sens_time
 #library(devtools)
 #install_local("/home/rgiordan/Documents/git_repos/StanSensitivity/rstansensitivity/", force=TRUE)
 
-tidy_results <- GetTidyResult(draws_mat, sens_result)
+tidy_results <- GetTidyResult(sens_result)
 sens_norm_df <- tidy_results$sens_norm_df
 sens_norm_df$parameter_base <- sub("\\..*$", "", sens_norm_df$parameter)
 

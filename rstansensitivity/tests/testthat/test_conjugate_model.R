@@ -119,8 +119,7 @@ test_that("conjugate_model_works", {
 
   # Check the sensitivity.
   stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
-  sens_result <- GetStanSensitivityFromModelFit(
-    result, draws_mat, stan_sensitivity_list, num_warmup_samples=num_warmup_samples)
+  sens_result <- GetStanSensitivityFromModelFit(result, stan_sensitivity_list)
   sens_mat <- sens_result$sens_mat
   sens_mat_normalized <- sens_result$sens_mat_normalized
 

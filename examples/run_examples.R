@@ -1,5 +1,7 @@
 library(rstan)
 library(rstansensitivity)
+library(ggplot2)
+library(gridExtra)
 
 rstan_options(auto_write=TRUE)
 
@@ -7,27 +9,9 @@ rstan_options(auto_write=TRUE)
 example_directory <- file.path(
   Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/examples/example_models")
 
-if (TRUE) {
-  base_model_name <- file.path(
-      example_directory, "negative_binomial/negative_binomial.stan")
-  num_warmup_samples <- 5000
-  num_samples <- 5000
-}
-
-
-if (FALSE) {
-  base_model_name <- file.path(
-      example_directory, "normal_censored/normal_censored.stan")
-  num_warmup_samples <- 5000
-  num_samples <- 5000
-}
-
-# Set this to be the location of the python script, or run it by hand following
-# the directions in the README.
-python_script <- file.path(Sys.getenv("GIT_REPO_LOC"),
-                           "StanSensitivity/python/generate_models.py")
-model_name <- GenerateSensitivityFromModel(
-  base_model_name, python_script=python_script)
+model_name <- file.path(example_directory, "negative_binomial/negative_binomial")
+num_warmup_samples <- 5000
+num_samples <- 5000
 
 ##################################
 # Compile and run the base model.
@@ -39,8 +23,7 @@ stan_data <- new.env()
 source(paste(model_name, "data.R", sep="."), local=stan_data)
 stan_data <- as.list(stan_data)
 
-# For now, you must use chains=1 for now to avoid confusion around get_inits.
-# The script currently assumes the same number of warm-up draws as final samples.
+# For now, you must use chains=1 for now to avoid confusion with stan's get_inits.
 mcmc_time <- Sys.time()
 sampling_result <- sampling(
   model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
@@ -51,21 +34,16 @@ print(summary(sampling_result))
 ##################################
 # Get the sensitivity model and sensitivity.
 
-draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_model <- GetStanSensitivityModel(model_name, stan_data)
-sens_time <- Sys.time()
-sens_result <- GetStanSensitivityFromModelFit(
-  sampling_result, draws_mat, stan_sensitivity_model)
-sens_time <- Sys.time()- sens_time
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_model)
+tidy_results <- GetTidyResult(sens_result)
 
+grid.arrange(
+  PlotSensitivities(tidy_results, normalized=TRUE) +
+    ggtitle("Normalized sensitivities")
+  ,
+  PlotSensitivities(tidy_results, normalized=FALSE) +
+    ggtitle("Sensitivities")
+  ,
+  ncol=2)
 
-##################################
-# Inspect the results.
-
-tidy_results <- GetTidyResult(draws_mat, sens_result)
-
-PlotSensitivities(tidy_results$sens_norm_df) +
-  ggtitle("Normalized sensitivities")
-
-PlotSensitivities(tidy_results$sens_df) +
-  ggtitle("Sensitivities")

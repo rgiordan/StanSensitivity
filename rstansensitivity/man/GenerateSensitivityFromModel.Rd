@@ -3,7 +3,7 @@
 \name{GenerateSensitivityFromModel}
 \alias{GenerateSensitivityFromModel}
 \title{Generate stan models for sensitivity calculations from a model with a
-hyperparameters{} block.}
+hyperparameters block.}
 \usage{
 GenerateSensitivityFromModel(base_model_name,
   python_script = "StanSensitivity/python/generate_models.py")
@@ -22,7 +22,7 @@ files in the same location as the original base model.
 }
 \description{
 Generate stan models for sensitivity calculations from a model with a
-hyperparameters{} block.
+hyperparameters block.
 }
 \examples{
 GenerateSensitivityFromModel(

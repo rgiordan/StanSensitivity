@@ -39,14 +39,14 @@ print(summary(sampling_result))
 draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
 stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
 sens_time <- Sys.time()
-sens_result <- GetStanSensitivityFromModelFit(sampling_result, draws_mat, stan_sensitivity_list)
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_list)
 sens_time <- Sys.time()- sens_time
 
 
 ##################################
 # Inspect the results.
 
-tidy_results <- GetTidyResult(draws_mat, sens_result)
+tidy_results <- GetTidyResult(sens_result)
 
 dev.new()
 ggplot(filter(tidy_results$sens_norm_df,

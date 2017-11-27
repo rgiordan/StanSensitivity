@@ -10,7 +10,7 @@ DrawSamples <- function(num_draws, draws_only=TRUE) {
     verbose=F, refresh=-1)
   if (draws_only) {
     draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-    return(draws_mat)  
+    return(draws_mat)
   } else {
     return(sampling_result)
   }
@@ -46,7 +46,7 @@ GetCorrelationGradient <- function(x_draws, y_draws) {
   sigma_xy <- mean(x_draws * y_draws) - x_mean * y_mean
   sigma_x <- sqrt(mean(x_draws^2) - x_mean^2)
   sigma_y <- sqrt(mean(y_draws^2) - y_mean^2)
-  
+
   arg_draws <- cbind(x_draws * y_draws, x_draws^2, y_draws^2, x_draws, y_draws)
   arg_cov_mat <- mcmcse::mcse.multi(arg_draws)$cov
   grad_g <- c(1 / (sigma_x * sigma_y),
@@ -85,7 +85,7 @@ GetCorrelation <- function(par) {
   y2_mean <- par[3]
   x_mean <- par[4]
   y_mean <- par[5]
-  
+
   sigma_x <- sqrt(x2_mean - x_mean^2)
   sigma_y <- sqrt(y2_mean - y_mean^2)
   sigma_xy <- xy_mean - x_mean * y_mean
@@ -150,7 +150,7 @@ GetNormalizedCovariance <- function(par) {
   mean_y <- par[4]
   sigma_xy <- mean_xy - mean_x * mean_y
   sigma_x <- sqrt(mean_x2 - mean_x^2)
-  return(sigma_xy / sigma_x)  
+  return(sigma_xy / sigma_x)
 }
 
 GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
@@ -179,7 +179,7 @@ ResultsFromSamples <- function(par, draws_mat) {
   par_mat <- cbind(par_draws, par_draws^2)
   se_results <- mcmcse::mcse.multi(par_mat)
   se_mat <- se_results$cov
-  
+
   # Variance estimate of variance using the Delta method
   # S = 1/n \sum x^2
   # mu = 1/2 \sum x
@@ -187,12 +187,12 @@ ResultsFromSamples <- function(par, draws_mat) {
   gbar <- colMeans(par_mat)
   grad_g <- c(-2 * gbar[1], 1)
   g_sd <- sqrt(t(grad_g) %*% se_mat %*% grad_g / length(par_draws))
-  
+
   # Variance estimate with mean held fixed
   g_draws <- (par_draws - mean(par_draws)) ^ 2
   n_eff <-coda::effectiveSize(g_draws)
   g_univariate_sd <- sd(g_draws) / sqrt(n_eff)
-  
+
   return(data.frame(mean=mean(par_draws), var=var(par_draws),
                     var_se=g_sd, var_univariate_se=g_univariate_sd))
 }
@@ -249,7 +249,7 @@ qqnorm(cov_results$cov)
 
 
 ##################
-# Investigate 
+# Investigate
 
 draws_mat <- DrawSamples(2000)
 
@@ -257,7 +257,7 @@ par_draws <- draws_mat[, par]
 par_mat <- cbind(par_draws, par_draws^2)
 se_results <- mcmcse::mcse.multi(par_mat)
 se_mat <- se_results$cov
-inv_scale_mat <- solve(diag(sqrt(diag(se_mat)))) 
+inv_scale_mat <- solve(diag(sqrt(diag(se_mat))))
 corr_mat <- inv_scale_mat %*% se_mat %*% inv_scale_mat
 
 # Variance estimate of variance using the Delta method
@@ -314,7 +314,7 @@ sens_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
   draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
   sens_result <- GetStanSensitivityFromModelFit(
-    sampling_result, draws_mat, stan_sensitivity_model)
+    sampling_result, stan_sensitivity_model)
   return(sens_result)
 }
 
@@ -322,7 +322,7 @@ cov_se_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
   sens_result <- sens_list[[sim]]
   draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-  grad_mat <- sens_result$grad_mat 
+  grad_mat <- sens_result$grad_mat
   return(GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean=FALSE))
 }
 
@@ -330,7 +330,7 @@ cov_se_fix_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
   sens_result <- sens_list[[sim]]
   draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-  grad_mat <- sens_result$grad_mat 
+  grad_mat <- sens_result$grad_mat
   return(GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean=TRUE))
 }
 
@@ -339,7 +339,7 @@ cov_norm_se_list <- foreach(sim=1:num_sims) %dopar% {
   sampling_result <- sampling_list[[sim]]
   sens_result <- sens_list[[sim]]
   draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
-  grad_mat <- sens_result$grad_mat 
+  grad_mat <- sens_result$grad_mat
   return(GetSensitivityStandardErrors(draws_mat, grad_mat, normalized=TRUE))
 }
 
