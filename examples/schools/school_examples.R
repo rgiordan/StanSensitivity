@@ -27,9 +27,17 @@ source(paste(example_dir, "schools-1.data.R", sep=""), local=stan_data)
 stan_data <- as.list(stan_data)
 
 # For now, you must use chains=1 for now to avoid confusion around get_inits.
-num_warmup_samples <- 1000
-num_samples <- 1000
-sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+num_warmup_samples <- 2500
+num_samples <- 2500
+sampling_file <- paste(model_name, "_sampling.Rdata", sep="")
+if (!file.exists(sampling_file)) {
+  print("Running sampler.")
+  sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+  save(sampling_result, file=sampling_file)
+} else {
+  print(sprintf("Loading cached samples from %s", sampling_file))
+  load(sampling_file)  
+}
 print(summary(sampling_result))
 
 stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
@@ -58,10 +66,17 @@ if (epsilon < min_epsilon) {
 # Re-run MCMC
 stan_data_perturb <- stan_data
 stan_data_perturb[["R"]][3, 3] <- stan_data_perturb[["R"]][3, 3] + epsilon
-mcmc_time <- Sys.time()
-sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
-                                    iter=(num_samples + num_warmup_samples))
-mcmc_time <- Sys.time() - mcmc_time
+perturbed_sampling_file <- paste(model_name, "_perturbed_sampling.Rdata", sep="")
+if (!file.exists(perturbed_sampling_file)) {
+  print("Running sampler.")
+  sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
+                                      iter=(num_samples + num_warmup_samples))
+  save(sampling_result_perturb, stan_data_perturb, file=perturbed_sampling_file)
+} else {
+  print(sprintf("Loading cached perturbed samples from %s", perturbed_sampling_file))
+  load(perturbed_sampling_file)  
+}
+
 draws_mat_perturb <- extract(sampling_result_perturb, permute=FALSE)[,1,]
 
 perturb_se <-
