@@ -44,6 +44,7 @@ GenerateTestModels <- function() {
 
 
 test_that("conjugate_model_works", {
+  set.seed(42)
   test_dir <- getwd()
   model_name <- GenerateTestModels()
 
@@ -54,8 +55,6 @@ test_that("conjugate_model_works", {
   source(paste(model_name, "data.R", sep="."), local=stan_data)
   stan_data <- as.list(stan_data)
 
-  # For now, you must use chains=1 for now to avoid confusion around get_inits.
-  # The script currently assumes the same number of warm-up draws as final samples.
   iter <- 2000
   num_chains <- 3
   result <- sampling(model, data=stan_data, chains=num_chains, iter=iter)
