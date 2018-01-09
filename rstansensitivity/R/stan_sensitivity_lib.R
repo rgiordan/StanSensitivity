@@ -15,9 +15,7 @@ library(reshape2)
 #' files in the same location as the original base model.
 #' @export
 #' @examples
-#' GenerateSensitivityFromModel(
-#'     "models/my_model.stan",
-#'     "~/git_repos/StanSensitivity/python/generate_models.py")
+#' GenerateSensitivityFromModel("models/my_model.stan")
 GenerateSensitivityFromModel <- function(
         base_model_name,
         python_script=system.file("generate_models.py",
