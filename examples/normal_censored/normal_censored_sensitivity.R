@@ -12,7 +12,8 @@ options(warn=1) # Display Stan warnings as they occur.
 # Run from anywhere in the StanSensitivity repository.
 git_repo <- system("git rev-parse --show-toplevel", intern=TRUE)
 example_dir <- file.path(git_repo, "examples/normal_censored/")
-model_name <- file.path(example_dir, "models/normal_censored")
+model_name <- GenerateSensitivityFromModel(
+  file.path(example_dir, "models/normal_censored.stan"))
 iters <- 20000
 
 ##################################
@@ -97,7 +98,8 @@ perturbed_df <-
              by="parameter", suffix=c("", ".orig"))
 
 print(ggplot(perturbed_df) +
-        geom_point(aes(x=hyperparameter_val, y=mean - mean.orig, color=parameter, group=parameter)) +
+        geom_point(aes(x=hyperparameter_val,
+                       y=mean - mean.orig, color=parameter, group=parameter)) +
         geom_errorbar(aes(x=hyperparameter_val,
                           ymin=mean - mean.orig - 2 * se_mean,
                           ymax=mean - mean.orig + 2 * se_mean,
@@ -105,12 +107,6 @@ print(ggplot(perturbed_df) +
         geom_line(aes(x=hyperparameter_val,
                       y=(hyperparameter_val - stan_data[[hyperparam_name]]) * sensitivity,
                       color=parameter, group=parameter)) +
-        geom_ribbon(aes(x=hyperparameter_val,
-                        ymin=(hyperparameter_val - stan_data[[hyperparam_name]]) *
-                          (sensitivity - 2 * sensitivity_se) - 2 * se_mean.orig,
-                        ymax=(hyperparameter_val - stan_data[[hyperparam_name]]) *
-                          (sensitivity + 2 * sensitivity_se) + 2 * se_mean.orig,
-                        fill=parameter, group=parameter), color=NA, alpha=0.2) +
         facet_grid(~ parameter))
 
 # Save the results

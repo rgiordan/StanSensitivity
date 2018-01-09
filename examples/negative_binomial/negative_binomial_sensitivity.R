@@ -11,7 +11,8 @@ rstan_options(auto_write=TRUE)
 # Run from anywhere in the StanSensitivity repository.
 git_repo <- system("git rev-parse --show-toplevel", intern=TRUE)
 example_dir <- file.path(git_repo, "examples/negative_binomial/")
-model_name <- file.path(example_dir, "models/negative_binomial")
+model_name <- GenerateSensitivityFromModel(
+  file.path(example_dir, "models/negative_binomial.stan"))
 num_warmup_samples <- 10000
 num_samples <- 10000
 

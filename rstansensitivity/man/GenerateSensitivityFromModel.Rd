@@ -6,7 +6,8 @@
 hyperparameters block.}
 \usage{
 GenerateSensitivityFromModel(base_model_name,
-  python_script = "StanSensitivity/python/generate_models.py")
+  python_script = system.file("generate_models.py", package =
+  "rstansensitivity"))
 }
 \arguments{
 \item{base_model_name}{The name of the model with a hyperparameters block,
@@ -25,7 +26,5 @@ Generate stan models for sensitivity calculations from a model with a
 hyperparameters block.
 }
 \examples{
-GenerateSensitivityFromModel(
-    "models/my_model.stan",
-    "~/git_repos/StanSensitivity/python/generate_models.py")
+GenerateSensitivityFromModel("models/my_model.stan")
 }

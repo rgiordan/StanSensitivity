@@ -11,10 +11,8 @@ rstan_options(auto_write=TRUE)
 # Run from anywhere in the StanSensitivity repository.
 git_repo <- system("git rev-parse --show-toplevel", intern=TRUE)
 example_dir <- file.path(git_repo, "examples/schools/")
-model_name <- file.path(example_dir, "models/schools-1")
-
-#base_model_name <- file.path(example_directory, "schools/schools-1.stan")
-
+model_name <- GenerateSensitivityFromModel(
+  file.path(example_dir, "models/schools-1.stan"))
 
 ##################################
 # Compile and run the base model.

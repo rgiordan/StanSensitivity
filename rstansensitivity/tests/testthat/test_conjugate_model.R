@@ -58,8 +58,7 @@ GenerateTestModels <- function() {
   "
 
   # To generate the above scripts automatically:
-  # python_script <- file.path(Sys.getenv("GIT_REPO_LOC"), "StanSensitivity/python/generate_models.py")
-  # model_name <- GenerateSensitivityFromModel(base_model_name, python_script=python_script)
+  # model_name <- GenerateSensitivityFromModel(base_model_name)
 
   model_name <- "/tmp/rstansensitivity_test"
   base_model_name <- paste(model_name, "stan", sep=".")
