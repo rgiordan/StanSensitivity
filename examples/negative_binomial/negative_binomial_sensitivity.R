@@ -13,8 +13,6 @@ git_repo <- system("git rev-parse --show-toplevel", intern=TRUE)
 example_dir <- file.path(git_repo, "examples/negative_binomial/")
 model_name <- GenerateSensitivityFromModel(
   file.path(example_dir, "models/negative_binomial.stan"))
-num_warmup_samples <- 10000
-num_samples <- 10000
 
 ##################################
 # Compile and run the base model.
@@ -28,7 +26,7 @@ stan_data <- as.list(stan_data)
 
 # For now, rstansensitivity only supports one chain.
 sampling_result <- sampling(
-  model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+  model, data=stan_data, chains=3, iter=3000)
 print(sampling_result)
 
 
