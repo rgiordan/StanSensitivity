@@ -22,58 +22,14 @@ GenerateTestModels <- function() {
   }
 
   "
-
-  base_model_generated <- "
-  data {
-  real y;
-
-  // Hyperparameters:
-    real prior_mean;
-  }
-  parameters {
-    real mu;
-  }
-  model {
-    mu ~ normal(prior_mean, 1.0);
-    y ~ normal(mu, 1.0);
-  }
-
-  "
-
-  base_model_sensitivity <- "
-  data {
-    real y;
-  }
-  parameters {
-    real mu;
-
-  // Hyperparameters:
-    real prior_mean;
-  }
-  model {
-    mu ~ normal(prior_mean, 1.0);
-    y ~ normal(mu, 1.0);
-  }
-
-  "
-
-  # To generate the above scripts automatically:
-  # model_name <- GenerateSensitivityFromModel(base_model_name)
-
+  
   model_name <- "/tmp/rstansensitivity_test"
   base_model_name <- paste(model_name, "stan", sep=".")
   model_file <- file(base_model_name, "w")
   cat(base_model, file=model_file)
   close(model_file)
 
-  model_file <- file(paste(model_name, "generated.stan", sep="_"), "w")
-  cat(base_model_generated, file=model_file)
-  close(model_file)
-
-  model_file <- file(paste(model_name, "sensitivity.stan", sep="_"), "w")
-  cat(base_model_sensitivity, file=model_file)
-  close(model_file)
-
+  model_name <- GenerateSensitivityFromModel(base_model_name)
 
   data_text <- "
   y <- 3.0
@@ -89,8 +45,7 @@ GenerateTestModels <- function() {
 
 test_that("conjugate_model_works", {
   test_dir <- getwd()
-  #model_name <- GenerateTestModels()
-  model_name <- file.path(test_dir, "/test_models/rstansensitivity_test")
+  model_name <- GenerateTestModels()
 
   model <- stan_model(paste(model_name, "_generated.stan", sep=""))
 
@@ -101,21 +56,23 @@ test_that("conjugate_model_works", {
 
   # For now, you must use chains=1 for now to avoid confusion around get_inits.
   # The script currently assumes the same number of warm-up draws as final samples.
-  num_warmup_samples <- 1000
-  num_samples <- 1000
-  result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
+  iter <- 2000
+  result <- sampling(model, data=stan_data, chains=2, iter=iter)
 
-  draws_mat <- extract(result, permute=FALSE)[,1,]
+  result_summary <- summary(result)
+  print(result_summary)
+  mu_summary <- result_summary$summary["mu", ]
 
+  num_samples <- result@sim$iter - result@sim$warmup 
   post_var <- 1 / 2.0
   post_sd <- sqrt(post_var)
   post_se <- post_sd / sqrt(num_samples)
   post_mean <- 0.5 * (stan_data$prior_mean + mean(stan_data$y))
 
   # Sanity checks.
-  expect_equal(post_mean, mean(draws_mat[, "mu"]), tolerance=3 * post_se)
-  expect_equal(post_sd, sd(draws_mat[, "mu"]), tolerance=3 * post_se)
-
+  expect_true(abs(post_mean - mu_summary["mean"]) / 3 * post_se  < 1)
+  expect_true(abs(post_sd - mu_summary["sd"]) / 3 * post_se  < 1)
+  
   # Check the sensitivity.
   stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
   sens_result <- GetStanSensitivityFromModelFit(result, stan_sensitivity_list)
@@ -123,5 +80,5 @@ test_that("conjugate_model_works", {
   sens_mat_normalized <- sens_result$sens_mat_normalized
 
   mean_sens <- sens_mat["prior_mean", "mu"]
-  expect_equal(post_var, mean_sens, tolerance=3 * post_se)
+  expect_true(abs(post_var - mean_sens) / 3 * post_se)
 })

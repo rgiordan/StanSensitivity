@@ -100,48 +100,61 @@ EvaluateAtDraws <- function(
 
   num_warmup_samples <- sampling_result@sim$warmup
   num_samples <- sampling_result@sim$iter - num_warmup_samples
+  num_chains <- sampling_result@sim$chains
+
   model_sens_fit <- stan_sensitivity_list$model_sens_fit
   sens_param_names <- stan_sensitivity_list$sens_param_names
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    grad_mat <- matrix(NA, length(sens_param_names), num_samples)
+    grad_mat <- matrix(NA, length(sens_param_names), num_samples * num_chains)
   } else {
     grad_mat <- matrix()
   }
 
-  cat("Evaluating sensitivity model at the MCMC draws.\n")
-  prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
-  for (n in 1:num_samples) {
-    setTxtProgressBar(prog_bar, value=n)
+  for (chain in 1:num_chains) {
+      cat("Evaluating sensitivity model at the MCMC draws for chain ",
+          chain, ".\n")
+      prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+      for (n in 1:num_samples) {
+        setTxtProgressBar(prog_bar, value=n)
 
-    # We rely on get_inits to return the draws at iteration n in a form
-    # that is easy to parse.
-    par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
-    for (par in ls(par_list)) {
-      # Note that get_inits is currently broken:
-      # https://github.com/stan-dev/rstan/issues/417
-      # ...but this has seemed to fix it (so far):
-      if (length(dim(sens_par_list[[par]])) >= 2) {
-        sens_par_list[[par]] <-
-          array(unlist(par_list[[par]]), dim(par_list[[par]]))
-      } else {
-        sens_par_list[[par]] <- as.numeric(par_list[[par]])
+        # We rely on get_inits to return the draws at iteration n in a form
+        # that is easy to parse.
+        par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
+        for (par in ls(par_list)) {
+          sens_par_list[[par]] <- par_list[[par]]
+        }
+        pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
+
+        # The index in the matrix stacked by chain.
+        # This needs to match the stacking done to the Stan samples in
+        # StackChainArray().  Perhaps it would be wiser to store the gradients
+        # in the same order as rstan::extract() and use the same function to
+        # put them into compatible shapes...
+        ix <- (chain - 1) * num_samples + n
+        if (compute_grads) {
+          glp <- grad_log_prob(model_sens_fit, pars_free)
+          grad_mat[, ix] <- glp
+          lp_vec[ix] <- attr(glp, "log_prob")
+        } else {
+          lp_vec[ix] <- log_prob(model_sens_fit, pars_free)
+        }
       }
-    }
-    pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
-
-    if (compute_grads) {
-      glp <- grad_log_prob(model_sens_fit, pars_free)
-      grad_mat[, n] <- glp
-      lp_vec[n] <- attr(glp, "log_prob")
-    } else {
-      lp_vec[n] <- log_prob(model_sens_fit, pars_free)
-    }
+      close(prog_bar)
   }
-  close(prog_bar)
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
+}
+
+
+# extract() returns an array of samples x chain x parameter.  Stack them
+# by chain into a single matrix of (samples * chains) x parameter.
+StackChainArray <- function(draws_array) {
+    num_chains <- dim(draws_array)[2]
+    draws_mat <- do.call(
+        rbind, lapply(1:num_chains, function(chain) { draws_array[, chain, ] }))
+    return(draws_mat)
 }
 
 
@@ -163,7 +176,7 @@ EvaluateAtDraws <- function(
 GetStanSensitivityFromModelFit <- function(
     sampling_result, stan_sensitivity_list) {
 
-    draws_mat <- extract(sampling_result, permute=FALSE)[,1,]
+    draws_mat <- StackChainArray(extract(sampling_result, permute=FALSE))
 
     # Get the model gradients with respect to the hyperparameters (and parameters).
     model_at_draws <- EvaluateAtDraws(
