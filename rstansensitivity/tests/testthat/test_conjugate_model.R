@@ -57,21 +57,21 @@ test_that("conjugate_model_works", {
   # For now, you must use chains=1 for now to avoid confusion around get_inits.
   # The script currently assumes the same number of warm-up draws as final samples.
   iter <- 2000
-  result <- sampling(model, data=stan_data, chains=2, iter=iter)
+  num_chains <- 3
+  result <- sampling(model, data=stan_data, chains=num_chains, iter=iter)
 
-  result_summary <- summary(result)
-  print(result_summary)
+  result_summary <- rstan::summary(result)
   mu_summary <- result_summary$summary["mu", ]
 
-  num_samples <- result@sim$iter - result@sim$warmup 
+  num_samples <- (result@sim$iter - result@sim$warmup ) * num_chains
   post_var <- 1 / 2.0
   post_sd <- sqrt(post_var)
   post_se <- post_sd / sqrt(num_samples)
   post_mean <- 0.5 * (stan_data$prior_mean + mean(stan_data$y))
 
   # Sanity checks.
-  expect_true(abs(post_mean - mu_summary["mean"]) / 3 * post_se  < 1)
-  expect_true(abs(post_sd - mu_summary["sd"]) / 3 * post_se  < 1)
+  expect_true(abs(post_mean - mu_summary["mean"]) / (3 * post_se)  < 1)
+  expect_true(abs(post_sd - mu_summary["sd"]) / (3 * post_se)  < 1)
   
   # Check the sensitivity.
   stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
@@ -80,5 +80,5 @@ test_that("conjugate_model_works", {
   sens_mat_normalized <- sens_result$sens_mat_normalized
 
   mean_sens <- sens_mat["prior_mean", "mu"]
-  expect_true(abs(post_var - mean_sens) / 3 * post_se)
+  expect_true(abs(post_var - mean_sens) / (3 * post_se) < 1)
 })

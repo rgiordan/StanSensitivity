@@ -122,7 +122,8 @@ EvaluateAtDraws <- function(
 
         # We rely on get_inits to return the draws at iteration n in a form
         # that is easy to parse.
-        par_list <- get_inits(sampling_result, iter=n + num_warmup_samples)[[1]]
+        par_list <- get_inits(
+            sampling_result, iter=n + num_warmup_samples)[[chain]]
         for (par in ls(par_list)) {
           sens_par_list[[par]] <- par_list[[par]]
         }
