@@ -20,12 +20,14 @@ library(reshape2)
 #'     "~/git_repos/StanSensitivity/python/generate_models.py")
 GenerateSensitivityFromModel <- function(
         base_model_name,
-        python_script="StanSensitivity/python/generate_models.py") {
+        python_script=system.file("generate_models.py",
+                                  package="rstansensitivity")) {
 
     model_suffix <-
         substr(base_model_name, nchar(base_model_name) - 4, nchar(base_model_name))
     stopifnot(model_suffix == ".stan")
-    system(paste(python_script, " --base_model=", base_model_name, sep=""))
+    system(paste("python ", python_script,
+                 " --base_model=", base_model_name, sep=""))
     model_name <- sub("\\.stan$", "", base_model_name)
     return(model_name)
 }
