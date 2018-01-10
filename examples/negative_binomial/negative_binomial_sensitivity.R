@@ -24,7 +24,6 @@ stan_data <- new.env()
 source(paste(example_dir, "negative_binomial.data.R", sep=""), local=stan_data)
 stan_data <- as.list(stan_data)
 
-# For now, rstansensitivity only supports one chain.
 sampling_result <- sampling(
   model, data=stan_data, chains=3, iter=3000)
 print(sampling_result)
