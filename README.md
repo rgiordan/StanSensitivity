@@ -154,12 +154,45 @@ draws from the original Stan run.  `GetTidyResult` packs the output into a
 tidy dataframe.  `PlotSensitivities` then hopefully makes a graph like this:
 
 ![Negative Bionimal Output](negative_binomial_example_output.png)
+*Negative binomial example*
 
 ### Check your conclusions!
 
 Re-run Stan to confirm your conclusions!  Don't skip this step --
 `rstansensitivity` is hopefully a useful guide, but it's not magic.
 Remember that linear approximations are only approximations!
+
+# How to interpret your results
+
+In order to interpret the output to determine whether you may have a robustness
+problem, you need to decide three things:
+
+1. What is an acceptable range of variation in the posterior means?
+2. What is the plausible range of your hyperparameters?
+3. Is it reasonable to expect that the expectations depend linearly on the
+hyperparameters over their plausible range?
+
+In general, every situation may admit different answers to these questions,
+and we do not make an attempt to answer them automatically.
+
+To help with (1), we do offer the option of reporting the sensitivity divded by the
+posterior standard deviation for each parameter.  We call this "normalized
+sensitivity":
+
+![Normalized sensitivity formula](normalized_sensitivity_formula.png)
+
+If you've decided on answers to (1) and (2), and are willing to at least
+tentatively that the answer to (3) is "yes", then you can use the linear
+approximation to determine whether the range of hyperparameters can cause
+the expectation to change by unacceptably large amounts.
+
+![Robustness and sensitivity](robustness_and_sensitivity.png)
+
+In the figure "Negative binomial example" above, suppose we had decided that `cauchy_loc_alpha` might vary from -4 to 4, and that a change of any parameter greater than one posterior standard deviation would be a problem.  This would occur if any parameter had a normalized sensitivity greater than in absolute value than 1 / 4 = 0.25.  However, the most sensitive parameter to `cauchy_loc_alpha` is `alpha`, and its normalized sensitivity is very likely less than 0.05 in magnitude.  So we would decide that sensitivity to `cauchy_loc_alpha` is not a problem -- as long as we believe that the dependence of all the expectations are linear in `cauchy_loc_alpha` between -4 and 4.
+
+For a more in-depth discussion of the relationship between sensitivity and robustness, see Appendix C of our paper [1].
+
+# References
 
 [1]: Local posterior robustness with parametric priors: Maximum and average sensitivity, Basu, Jammalamadaka, Rao, Liu (1996)
 
