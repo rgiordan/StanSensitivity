@@ -57,8 +57,9 @@ model {
   mu_a1 ~ normal(mu_a1_loc, mu_a1_scale);
   mu_a2 ~ normal(mu_a2_loc, mu_a2_scale);
 
-  sigma_a1 ~ cauchy(sigma_a1_loc, sigma_a1_scale);
-  sigma_a2 ~ cauchy(sigma_a2_loc, sigma_a2_scale);
+  // Tighten the random effect variance priors.
+  sigma_a1 ~ normal(sigma_a1_loc, sigma_a1_scale);
+  sigma_a2 ~ normal(sigma_a2_loc, sigma_a2_scale);
   sigma_y ~ cauchy(sigma_y_loc, sigma_y_scale);
 
   // To make the log posterior a density in log_sigma_*, add the log abs Jacobians
