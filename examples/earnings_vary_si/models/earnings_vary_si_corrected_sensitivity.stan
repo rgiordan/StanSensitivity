@@ -4,18 +4,6 @@ data {
   int eth[N];
   vector[N] height;
 }
-hyperparameters {
-  real mu_a1_loc;
-  real mu_a1_scale;
-  real mu_a2_loc;
-  real mu_a2_scale;
-  real sigma_a1_loc;
-  real sigma_a1_scale;
-  real sigma_a2_loc;
-  real sigma_a2_scale;
-  real sigma_y_loc;
-  real sigma_y_scale;
-}
 transformed data {
   vector[N] log_earn;
   log_earn = log(earn);
@@ -28,6 +16,18 @@ parameters {
   real log_sigma_a1;
   real log_sigma_a2;
   real log_sigma_y;
+
+  // Hyperparameters:
+  real mu_a1_loc;
+  real mu_a1_scale;
+  real mu_a2_loc;
+  real mu_a2_scale;
+  real sigma_a1_loc;
+  real sigma_a1_scale;
+  real sigma_a2_loc;
+  real sigma_a2_scale;
+  real sigma_y_loc;
+  real sigma_y_scale;
 }
 transformed parameters {
   real<lower=0> sigma_a1;
@@ -67,3 +67,4 @@ model {
 
   log_earn ~ normal(y_hat, sigma_y);
 }
+

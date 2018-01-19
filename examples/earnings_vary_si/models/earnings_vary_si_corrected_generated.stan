@@ -3,8 +3,8 @@ data {
   vector[N] earn;
   int eth[N];
   vector[N] height;
-}
-hyperparameters {
+
+  // Hyperparameters:
   real mu_a1_loc;
   real mu_a1_scale;
   real mu_a2_loc;
@@ -67,3 +67,4 @@ model {
 
   log_earn ~ normal(y_hat, sigma_y);
 }
+
