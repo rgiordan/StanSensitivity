@@ -50,7 +50,7 @@ cat(base_model_code, file=tmp_file)
 model_name <- GenerateSensitivityFromModel(tmp_file)
 
 num_chains <- 2
-model <- stan_model(sprintf("%s_generated.stan", model_name))
+model <- stan_model(GetSamplingModelFilename(model_name))
 stan_data <- list(id_mat=diag(3), theta=1)
 sampling_result <- sampling(model, chains=num_chains, iter=300, data=stan_data)
 

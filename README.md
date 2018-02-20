@@ -123,7 +123,7 @@ For example, with the `negative_binomial` example we run:
 
 ```
 # Compile your model.
-model <- stan_model(paste(model_name, "_generated.stan", sep=""))
+model <- stan_model(GetSamplingModelFilename(model_name))
 
 # Load the data.
 stan_data <- new.env()
