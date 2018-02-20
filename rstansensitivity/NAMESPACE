@@ -2,6 +2,7 @@
 
 export(GenerateSensitivityFromModel)
 export(GetImportanceSamplingFromModelFit)
+export(GetSamplingModelFilename)
 export(GetSensitivityStandardErrors)
 export(GetStanSensitivityFromModelFit)
 export(GetStanSensitivityModel)
