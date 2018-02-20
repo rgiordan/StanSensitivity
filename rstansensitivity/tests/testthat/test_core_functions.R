@@ -3,9 +3,6 @@ library(rstansensitivity)
 library(testthat)
 rstan_options(auto_write=TRUE)
 
-# source("rstansensitivity/R/stan_sensitivity_lib.R")
-# source("rstansensitivity/R/result_processing_lib.R")
-
 test_that("basic_functionality", {
   TypeForTest <- function(typename, varname=NULL, dim="", dist=NULL) {
   if (is.null(varname)) { 
