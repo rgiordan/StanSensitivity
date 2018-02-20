@@ -19,7 +19,7 @@ iters <- 20000
 ##################################
 # Compile and run the base model.
 
-model <- stan_model(paste(model_name, "_generated.stan", sep=""))
+model <- stan_model(GetSamplingModelFilename(model_name))
 
 # Load the data and hyperparameters.
 stan_data <- new.env()

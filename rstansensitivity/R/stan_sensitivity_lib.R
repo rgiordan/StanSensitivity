@@ -3,6 +3,23 @@ library(dplyr)
 library(reshape2)
 
 
+#' Get the filename of the stan model to be used for sampling.
+#'
+#' @param model_name A full path to the base model name.
+#' For example, if the model with the \code{hyperparameter} block is named
+#' \code{/home/user/my_model.stan}, set \code{model_name} should be equal
+#' to \code{"/home/user/my_model"}
+#'
+#' @return The full path of the generated file to be used for sampling.
+#' @export
+#' @examples
+#' model_name <- GenerateSensitivityFromModel("models/my_model.stan")
+#' model <- stan_model(GetSamplingModelFilename(model_name))
+#' sampling_result <- sampling(model, data=stan_data)
+GetSamplingModelFilename <- function(model_name) {
+    return(paste(model_name, "_generated.stan", sep=""))
+}
+
 #' Generate stan models for sensitivity calculations from a model with a
 #' hyperparameters block.
 #'
@@ -49,12 +66,12 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     # get_inits.  This way there is no worry about invalid intializations.
     model_sens_params <-
         stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
-                   data=stan_data, algorithm="Fixed_param",
-                   iter=1, chains=1)
+             data=stan_data, algorithm="Fixed_param",
+             iter=1, chains=1)
     model_params <-
-        stan(paste(model_name, "_generated.stan", sep=""),
-                   data=stan_data, algorithm="Fixed_param",
-                   iter=1, chains=1)
+        stan(GetSamplingModelFilename(model_name),
+             data=stan_data, algorithm="Fixed_param",
+             iter=1, chains=1)
 
     sens_par_list <- get_inits(model_sens_params)[[1]]
     model_par_list <- get_inits(model_params)[[1]]

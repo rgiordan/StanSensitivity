@@ -48,7 +48,7 @@ test_that("conjugate_model_works", {
   test_dir <- getwd()
   model_name <- GenerateTestModels()
 
-  model <- stan_model(paste(model_name, "_generated.stan", sep=""))
+  model <- stan_model(GetSamplingModelFilename(model_name))
 
   # Load the data and hyperparameters.
   stan_data <- new.env()
