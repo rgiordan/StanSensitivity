@@ -55,7 +55,7 @@ stan_data <- list(id_mat=diag(3), theta=1)
 sampling_result <- sampling(model, chains=num_chains, iter=300, data=stan_data)
 
 sens_list <- GetStanSensitivityModel(model_name, stan_data)
-
+    
 draws_array <- extract(sampling_result, permute=FALSE)
 num_warmup_samples <- sampling_result@sim$warmup
 num_samples <- sampling_result@sim$iter - num_warmup_samples

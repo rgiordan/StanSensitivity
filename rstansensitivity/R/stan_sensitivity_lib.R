@@ -68,6 +68,8 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
         stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
              data=stan_data, algorithm="Fixed_param",
              iter=1, chains=1)
+             
+    # This gets a model fit object for the sampling model.
     model_params <-
         stan(GetSamplingModelFilename(model_name),
              data=stan_data, algorithm="Fixed_param",
@@ -76,19 +78,27 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     sens_par_list <- get_inits(model_sens_params)[[1]]
     model_par_list <- get_inits(model_params)[[1]]
 
-    # Get the sensitivity parameters in list form.
+    # Get a legal version of the sensitivity parameters in a list that can
+    # be passed to a model fit object.  The parameters read from model_par_list
+    # are guaranteed to be valid, and the hyperparameters are read from
+    # stan_data.
     for (par in names(model_par_list)) {
-      cat("Copying parameter '", par, "' from the sampler\n", sep="")
+      #cat("Copying parameter '", par, "' from the sampler\n", sep="")
       sens_par_list[[par]] <- model_par_list[[par]]
     }
-    for (par in names(sens_par_list)) {
-        if (par %in% names(stan_data)) {
-            cat("Copying hyperparameter '", par,
-                 "' from the data block.\n", sep="")
-            sens_par_list[[par]] <- stan_data[[par]]
+    for (par in setdiff(names(model_par_list), names(sens_par_list))) {
+        if (!(par %in% names(stan_data))) {
+            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))            
         }
+        #if (par %in% names(stan_data)) {
+        #    cat("Copying hyperparameter '", par,
+        #         "' from the data block.\n", sep="")
+        sens_par_list[[par]] <- stan_data[[par]]
+        #}
     }
 
+    # This is the stan fit object that we will use to evaluate the gradient
+    # of the log probability at the MCMC draws.
     model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
                            data=stan_data, algorithm="Fixed_param",
                            iter=1, chains=1, init=list(sens_par_list))
