@@ -76,27 +76,27 @@ GenerateTestModels <- function() {
 }
 
 
-test_that("reusing_model_works", {
-  set.seed(42)
-  test_dir <- getwd()
-  model_files <- GenerateTestModels()
-
-  # Compare the generated model to the original model in which the
-  # hyperparameter was hard-encoded, and a "bad" model which differs from
-  # either of the two.
-  model_gen <- stan_model(GetSamplingModelFilename(model_files$model_name))
-  model_orig <- stan_model(model_file$orig_model_file)
-  model_bad <- stan_model(model_file$orig_model_file)
-
-  # Load the data and hyperparameters.
-  stan_data_gen <- list(y=3.0, prior_mean=0.0)
-  stan_data_orig <- list(y=3.0)
-  stan_data_bad <- list(y=3.0, prior_var=2.0)
-  stan_data_notbad <- list(y=3.0, prior_var=1.0)
-
-  iter <- 2000
-  num_chains <- 3
-  result <- sampling(model_orig, data=stan_data_orig,
-                     chains=num_chains, iter=iter)
-
-})
+# test_that("reusing_model_works", {
+#   set.seed(42)
+#   test_dir <- getwd()
+#   model_files <- GenerateTestModels()
+# 
+#   # Compare the generated model to the original model in which the
+#   # hyperparameter was hard-encoded, and a "bad" model which differs from
+#   # either of the two.
+#   model_gen <- stan_model(GetSamplingModelFilename(model_files$model_name))
+#   model_orig <- stan_model(model_file$orig_model_file)
+#   model_bad <- stan_model(model_file$orig_model_file)
+# 
+#   # Load the data and hyperparameters.
+#   stan_data_gen <- list(y=3.0, prior_mean=0.0)
+#   stan_data_orig <- list(y=3.0)
+#   stan_data_bad <- list(y=3.0, prior_var=2.0)
+#   stan_data_notbad <- list(y=3.0, prior_var=1.0)
+# 
+#   iter <- 2000
+#   num_chains <- 3
+#   result <- sampling(model_orig, data=stan_data_orig,
+#                      chains=num_chains, iter=iter)
+# 
+# })

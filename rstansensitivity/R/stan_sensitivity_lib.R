@@ -120,28 +120,46 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 }
 
 
-# Evaluate at draws using the hyperparameters in sens_par_list.
-EvaluateAtDraws <- function(
-    sampling_result, stan_sensitivity_list, sens_par_list,
-    compute_grads=FALSE) {
+#' Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
+#' from a different model.
+#'
+#' @param sampling_result The output of Stan sampling (e.g. rstan::sampling())
+#' @param stan_data A stanfit object from a model
+#' @return A list of Stan models and parameters names which can be passed to
+#' the \code{stan_sensitivity_list} argument of
+#' functions like code{GetStanSensitivityFromModelFit}.
+#' @export
+EvaluateModelAtDraws <- function(
+    sampling_result, model_fit, model_par_list, compute_grads=FALSE) {
 
   num_warmup_samples <- sampling_result@sim$warmup
   num_samples <- sampling_result@sim$iter - num_warmup_samples
   num_chains <- sampling_result@sim$chains
 
-  model_sens_fit <- stan_sensitivity_list$model_sens_fit
-  sens_param_names <- stan_sensitivity_list$sens_param_names
+          
+  # Check that every parameter in the sampling results is also in the model
+  # parameter list.
+  par_list_check <- get_inits(sampling_result, iter=1)[[1]]
+  missing_pars <- setdiff(names(par_list_check), names(model_par_list))
+  if (length(missing_pars) > 0) {
+      stop(sprintf(
+          "Parameters from sampling result not in new model: %s",
+          paste(missing_pars, collapse=", ")))
+  }
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    grad_mat <- matrix(NA, length(sens_param_names), num_samples * num_chains)
+    param_names <-
+          model_fit@.MISC$stan_fit_instance$unconstrained_param_names(
+              FALSE, FALSE)
+    grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
   } else {
     grad_mat <- matrix()
   }
 
   for (chain in 1:num_chains) {
-      cat("Evaluating sensitivity model at the MCMC draws for chain ",
+      cat("Evaluating model at the MCMC draws for chain ",
           chain, ".\n")
       prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
       for (n in 1:num_samples) {
@@ -152,9 +170,9 @@ EvaluateAtDraws <- function(
         par_list <- get_inits(
             sampling_result, iter=n + num_warmup_samples)[[chain]]
         for (par in ls(par_list)) {
-          sens_par_list[[par]] <- par_list[[par]]
+          model_par_list[[par]] <- par_list[[par]]
         }
-        pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
+        pars_free <- unconstrain_pars(model_fit, model_par_list)
 
         # The index in the matrix stacked by chain.
         # This needs to match the stacking done to the Stan samples in
@@ -163,16 +181,28 @@ EvaluateAtDraws <- function(
         # put them into compatible shapes...
         ix <- (chain - 1) * num_samples + n
         if (compute_grads) {
-          glp <- grad_log_prob(model_sens_fit, pars_free)
+          glp <- grad_log_prob(model_fit, pars_free)
           grad_mat[, ix] <- glp
           lp_vec[ix] <- attr(glp, "log_prob")
         } else {
-          lp_vec[ix] <- log_prob(model_sens_fit, pars_free)
+          lp_vec[ix] <- log_prob(model_fit, pars_free)
         }
       }
       close(prog_bar)
   }
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
+}
+
+
+# Evaluate at draws using the hyperparameters in sens_par_list.
+EvaluateAtDraws <- function(
+    sampling_result, stan_sensitivity_list, sens_par_list,
+    compute_grads=FALSE) {
+
+    return(EvaluateModelAtDraws(
+        sampling_result,
+        stan_sensitivity_list$model_sens_fit,
+        stan_sensitivity_list$sens_par_list, compute_grads=compute_grads))
 }
 
 
