@@ -3,6 +3,11 @@ library(dplyr)
 library(reshape2)
 
 
+# Just a more readable shortcut for the Stan attribute.
+GetParamNames <- function(model_fit) {
+    model_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+}
+
 #' Get the filename of the stan model to be used for sampling.
 #'
 #' @param model_name A full path to the base model name.
@@ -68,6 +73,8 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
         stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
              data=stan_data, algorithm="Fixed_param",
              iter=1, chains=1)
+
+    # This gets a model fit object for the sampling model.
     model_params <-
         stan(GetSamplingModelFilename(model_name),
              data=stan_data, algorithm="Fixed_param",
@@ -76,30 +83,29 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     sens_par_list <- get_inits(model_sens_params)[[1]]
     model_par_list <- get_inits(model_params)[[1]]
 
-    # Get the sensitivity parameters in list form.
+    # Get a legal version of the sensitivity parameters in a list that can
+    # be passed to a model fit object.  The parameters read from model_par_list
+    # are guaranteed to be valid, and the hyperparameters are read from
+    # stan_data.
     for (par in names(model_par_list)) {
-      cat("Copying parameter '", par, "' from the sampler\n", sep="")
       sens_par_list[[par]] <- model_par_list[[par]]
     }
-    for (par in names(sens_par_list)) {
-        if (par %in% names(stan_data)) {
-            cat("Copying hyperparameter '", par,
-                 "' from the data block.\n", sep="")
-            sens_par_list[[par]] <- stan_data[[par]]
+    for (par in setdiff(names(sens_par_list), names(model_par_list))) {
+        if (!(par %in% names(stan_data))) {
+            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
         }
+        sens_par_list[[par]] <- stan_data[[par]]
     }
 
+    # This is the stan fit object that we will use to evaluate the gradient
+    # of the log probability at the MCMC draws.
     model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
                            data=stan_data, algorithm="Fixed_param",
                            iter=1, chains=1, init=list(sens_par_list))
 
     # These names help sort through the vectors of sensitivity.
-    param_names <-
-        model_params@.MISC$stan_fit_instance$unconstrained_param_names(
-            FALSE, FALSE)
-    sens_param_names <-
-        model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(
-            FALSE, FALSE)
+    param_names <- GetParamNames(model_params)
+    sens_param_names <- GetParamNames(model_sens_fit)
 
     return(list(model_sens_fit=model_sens_fit,
                 model_params=model_params,
@@ -110,28 +116,55 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 }
 
 
-# Evaluate at draws using the hyperparameters in sens_par_list.
-EvaluateAtDraws <- function(
-    sampling_result, stan_sensitivity_list, sens_par_list,
-    compute_grads=FALSE) {
+#' Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
+#' from a different model.
+#'
+#' @param sampling_result The output of Stan sampling (e.g. rstan::sampling())
+#' @param model_fit A stanfit object from a model, possibly containing a
+#' superset of the parameters in sampling_result.
+#' @param A list of parameters for model_fit which can be passed to
+#' \code{unconstrain_pars} for the \code{model_fit} model.  Every parameter
+#' in \code{get_inits} applied to \code{sampling_result} must be also be found
+#' in \code{model_par_list}.
+#' @param compute_grads If FALSE, only return the log probability.
+#' @return
+#' A list with \code{lp_vec} containing a vector of log probabilities and,
+#' if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
+#' all with resepct to the parameters in \code{model_fit} at the draws in
+#' \code{sampling_result}.  If the sampler contains multiple chains the
+#' chains are concatenated in order.
+#' @export
+EvaluateModelAtDraws <- function(
+    sampling_result, model_fit, model_par_list,
+    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf) {
 
   num_warmup_samples <- sampling_result@sim$warmup
-  num_samples <- sampling_result@sim$iter - num_warmup_samples
-  num_chains <- sampling_result@sim$chains
+  num_samples <- min(sampling_result@sim$iter - num_warmup_samples,
+                     max_num_samples)
+  num_chains <- min(sampling_result@sim$chains, max_chains)
 
-  model_sens_fit <- stan_sensitivity_list$model_sens_fit
-  sens_param_names <- stan_sensitivity_list$sens_param_names
+  # Check that every parameter in the sampling results is also in the model
+  # parameter list.
+  par_list_check <- get_inits(sampling_result, iter=1)[[1]]
+  missing_pars <- setdiff(names(par_list_check), names(model_par_list))
+  if (length(missing_pars) > 0) {
+      stop(sprintf(
+          "Parameters from sampling result not in new model: %s",
+          paste(missing_pars, collapse=", ")))
+  }
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    grad_mat <- matrix(NA, length(sens_param_names), num_samples * num_chains)
+    param_names <- GetParamNames(model_fit)
+    grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
+    rownames(grad_mat) <- param_names
   } else {
     grad_mat <- matrix()
   }
 
   for (chain in 1:num_chains) {
-      cat("Evaluating sensitivity model at the MCMC draws for chain ",
+      cat("Evaluating model at the MCMC draws for chain ",
           chain, ".\n")
       prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
       for (n in 1:num_samples) {
@@ -142,9 +175,9 @@ EvaluateAtDraws <- function(
         par_list <- get_inits(
             sampling_result, iter=n + num_warmup_samples)[[chain]]
         for (par in ls(par_list)) {
-          sens_par_list[[par]] <- par_list[[par]]
+          model_par_list[[par]] <- par_list[[par]]
         }
-        pars_free <- unconstrain_pars(model_sens_fit, sens_par_list)
+        pars_free <- unconstrain_pars(model_fit, model_par_list)
 
         # The index in the matrix stacked by chain.
         # This needs to match the stacking done to the Stan samples in
@@ -153,16 +186,108 @@ EvaluateAtDraws <- function(
         # put them into compatible shapes...
         ix <- (chain - 1) * num_samples + n
         if (compute_grads) {
-          glp <- grad_log_prob(model_sens_fit, pars_free)
+          glp <- grad_log_prob(model_fit, pars_free)
           grad_mat[, ix] <- glp
           lp_vec[ix] <- attr(glp, "log_prob")
         } else {
-          lp_vec[ix] <- log_prob(model_sens_fit, pars_free)
+          lp_vec[ix] <- log_prob(model_fit, pars_free)
         }
       }
       close(prog_bar)
   }
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
+}
+
+
+#' Check whether two stan models objects agree on draws in
+#' \code{sampling_result}.
+#'
+#' @param sampling_result Samples drawn from a Stan model, possibly distinct
+#' from \code{model_1} and \code{model_2}.
+#' @param model_1 The path to the first stan model.
+#' @param model_2 The path to the second stan model.
+#' @param stan_data_1 A stan data file for the first model.
+#' @param stan_data_2 A stan data file for the second model.
+#' @param check_grads Whether to check the gradients of the log probabilities.
+#' @param tol The tolerance for the difference in grads and log probability.
+#' @return A boolean indicating whether model_1 and model_2 agree with each
+#' other on the samples specified in sampling_result.  Log probability is
+#' is compared up to a constant, and the gradients are compared on the
+#' parameters in common according to the unconstrained parameter names.
+#' @export
+CheckModelEquivalence <- function(
+    sampling_result, model_1, model_2, stan_data_1, stan_data_2,
+    check_grads=TRUE,
+    tol=1e-8, max_chains=1, max_num_samples=100) {
+
+    model_fit_1 <- sampling(
+        object=model_1, data=stan_data_1,
+        algorithm="Fixed_param", iter=1, chains=1)
+    model_par_list_1 <- get_inits(model_fit_1, 1)[[1]]
+
+    model_fit_2 <- sampling(
+        object=model_2, data=stan_data_2,
+        algorithm="Fixed_param", iter=1, chains=1)
+    model_par_list_2 <- get_inits(model_fit_2, 1)[[1]]
+
+    return(CheckModelFitEquivalence(
+                sampling_result, model_fit_1, model_fit_2,
+                model_par_list_1, model_par_list_2,
+                check_grads=check_grads, tol=tol,
+                max_chains=max_chains, max_num_samples=max_num_samples))
+}
+
+
+CheckModelFitEquivalence <- function(
+    sampling_result,
+    model_fit_1, model_fit_2,
+    model_par_list_1, model_par_list_2,
+    check_grads=TRUE,
+    tol=1e-8, max_chains=1, max_num_samples=100) {
+
+    model_draws_1 <- EvaluateModelAtDraws(
+        sampling_result, model_fit_1, model_par_list_1,
+        compute_grads=check_grads,
+        max_chains=max_chains, max_num_samples=max_num_samples)
+    model_draws_2 <- EvaluateModelAtDraws(
+        sampling_result, model_fit_2, model_par_list_2,
+        compute_grads=check_grads,
+        max_chains=max_chains, max_num_samples=max_num_samples)
+
+    # The log probability can differ up to a constant.
+    log_prob_ok <-
+        sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
+
+    if (check_grads) {
+        # Ideally we would compare on the unconstrained parameter names used
+        # to generate the sampling result.  Unfortunately, it appears that if
+        # a sampling result has been saved to an Rdata file,
+        # the information necessary to run GetParamNames is not saved.
+        common_par_names <-
+            intersect(rownames(model_draws_1$grad_mat),
+                      rownames(model_draws_2$grad_mat))
+        stopifnot(length(common_par_names) > 0)
+        grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ]
+        grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ]
+        grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol
+    } else {
+        grad_ok <- TRUE
+    }
+
+    return(log_prob_ok & grad_ok)
+}
+
+
+# Evaluate at draws using the hyperparameters in sens_par_list.
+EvaluateAtDraws <- function(
+    sampling_result, stan_sensitivity_list, sens_par_list,
+    compute_grads=FALSE) {
+
+    return(EvaluateModelAtDraws(
+        sampling_result,
+        stan_sensitivity_list$model_sens_fit,
+        stan_sensitivity_list$sens_par_list,
+        compute_grads=compute_grads))
 }
 
 
@@ -201,15 +326,13 @@ GetStanSensitivityFromModelFit <- function(
             sampling_result, stan_sensitivity_list,
             stan_sensitivity_list$sens_par_list, compute_grads=TRUE)
 
-    param_names <- stan_sensitivity_list$param_names
-    sens_param_names <- stan_sensitivity_list$sens_param_names
-
     # Stan takes gradients with respect to everything in the parameters block,
     # not just the hyperparameters.  Remove the rows not corresponding to
     # hyperparameters.
-    grad_mat <- model_at_draws$grad_mat
-    rownames(grad_mat) <- sens_param_names
-    grad_mat <- grad_mat[setdiff(sens_param_names, param_names),, drop=FALSE]
+    param_names <- stan_sensitivity_list$param_names
+    sens_param_names <- stan_sensitivity_list$sens_param_names
+    grad_mat <- model_at_draws$grad_mat[
+        setdiff(sens_param_names, param_names),, drop=FALSE]
 
     # Calculate the sensitivity.
     sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
