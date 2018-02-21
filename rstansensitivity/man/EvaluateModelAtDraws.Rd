@@ -24,7 +24,7 @@ in \code{model_par_list}.}
 \value{
 A list with \code{lp_vec} containing a vector of log probabilities and,
 if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
-all with resepct to the parameters in \code{model_fit} at the draws in 
+all with resepct to the parameters in \code{model_fit} at the draws in
 \code{sampling_result}.  If the sampler contains multiple chains the
 chains are concatenated in order.
 }

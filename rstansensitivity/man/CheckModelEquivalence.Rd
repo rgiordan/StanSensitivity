@@ -2,11 +2,35 @@
 % Please edit documentation in R/stan_sensitivity_lib.R
 \name{CheckModelEquivalence}
 \alias{CheckModelEquivalence}
-\title{Check whether two stanfit objects agree on draws in \code{sampling_result}.}
+\title{Check whether two stan models objects agree on draws in
+\code{sampling_result}.}
 \usage{
 CheckModelEquivalence(sampling_result, model_1, model_2, stan_data_1,
   stan_data_2, check_grads = TRUE, tol = 1e-08)
 }
+\arguments{
+\item{sampling_result}{Samples drawn from a Stan model, possibly distinct
+from \code{model_1} and \code{model_2}.}
+
+\item{model_1}{The path to the first stan model.}
+
+\item{model_2}{The path to the second stan model.}
+
+\item{stan_data_1}{A stan data file for the first model.}
+
+\item{stan_data_2}{A stan data file for the second model.}
+
+\item{check_grads}{Whether to check the gradients of the log probabilities.}
+
+\item{tol}{The tolerance for the difference in grads and log probability.}
+}
+\value{
+A boolean indicating whether model_1 and model_2 agree with each
+other on the samples specified in sampling_result.  Log probability is
+is compared up to a constant, and the gradients are compared on the
+parameters found sampling_result.
+}
 \description{
-Check whether two stanfit objects agree on draws in \code{sampling_result}.
+Check whether two stan models objects agree on draws in
+\code{sampling_result}.
 }

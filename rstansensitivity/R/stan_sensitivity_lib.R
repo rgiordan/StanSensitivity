@@ -68,7 +68,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
         stan(paste(model_name, "_sensitivity_parameters.stan", sep=""),
              data=stan_data, algorithm="Fixed_param",
              iter=1, chains=1)
-             
+
     # This gets a model fit object for the sampling model.
     model_params <-
         stan(GetSamplingModelFilename(model_name),
@@ -88,7 +88,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     }
     for (par in setdiff(names(model_par_list), names(sens_par_list))) {
         if (!(par %in% names(stan_data))) {
-            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))            
+            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
         }
         #if (par %in% names(stan_data)) {
         #    cat("Copying hyperparameter '", par,
@@ -134,7 +134,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 #' @return
 #' A list with \code{lp_vec} containing a vector of log probabilities and,
 #' if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
-#' all with resepct to the parameters in \code{model_fit} at the draws in 
+#' all with resepct to the parameters in \code{model_fit} at the draws in
 #' \code{sampling_result}.  If the sampler contains multiple chains the
 #' chains are concatenated in order.
 #' @export
@@ -203,8 +203,21 @@ EvaluateModelAtDraws <- function(
 }
 
 
-#' Check whether two stanfit objects agree on draws in \code{sampling_result}.
+#' Check whether two stan models objects agree on draws in
+#' \code{sampling_result}.
 #'
+#' @param sampling_result Samples drawn from a Stan model, possibly distinct
+#' from \code{model_1} and \code{model_2}.
+#' @param model_1 The path to the first stan model.
+#' @param model_2 The path to the second stan model.
+#' @param stan_data_1 A stan data file for the first model.
+#' @param stan_data_2 A stan data file for the second model.
+#' @param check_grads Whether to check the gradients of the log probabilities.
+#' @param tol The tolerance for the difference in grads and log probability.
+#' @return A boolean indicating whether model_1 and model_2 agree with each
+#' other on the samples specified in sampling_result.  Log probability is
+#' is compared up to a constant, and the gradients are compared on the
+#' parameters found sampling_result.
 #' @export
 CheckModelEquivalence <- function(
     sampling_result, model_1, model_2, stan_data_1, stan_data_2,
@@ -226,6 +239,7 @@ CheckModelEquivalence <- function(
                 check_grads=check_grads, tol=tol))
 }
 
+
 CheckModelFitEquivalence <- function(
     sampling_result,
     model_fit_1, model_fit_2,
@@ -240,19 +254,19 @@ CheckModelFitEquivalence <- function(
     model_draws_2 <- EvaluateModelAtDraws(
         sampling_result, model_fit_2, model_par_list_2,
         compute_grads=check_grads)
-        
+
     # The log probability can differ up to a constant.
     log_prob_ok <-
         sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
 
     if (check_grads) {
-        grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ] 
-        grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ] 
+        grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ]
+        grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ]
         grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol
     } else {
         grad_ok <- TRUE
     }
-    
+
     return(log_prob_ok & grad_ok)
 }
 
