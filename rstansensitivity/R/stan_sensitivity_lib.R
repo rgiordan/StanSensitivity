@@ -162,6 +162,7 @@ EvaluateModelAtDraws <- function(
           model_fit@.MISC$stan_fit_instance$unconstrained_param_names(
               FALSE, FALSE)
     grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
+    rownames(grad_mat) <- param_names
   } else {
     grad_mat <- matrix()
   }
@@ -210,14 +211,14 @@ CheckModelEquivalence <- function(
     check_grads=TRUE, tol=1e-8) {
 
     model_fit_1 <- sampling(
-        model=model_1, data=stan_data_1,
+        object=model_1, data=stan_data_1,
         algorithm="Fixed_param", iter=1, chains=1)
     model_par_list_1 <- get_inits(model_fit_1, 1)[[1]]
 
     model_fit_2 <- sampling(
-        model=model_2, data=stan_data_2,
+        object=model_2, data=stan_data_2,
         algorithm="Fixed_param", iter=1, chains=1)
-    model_par_list_2 <- get_inits(model_fit_2, 2)[[2]]
+    model_par_list_2 <- get_inits(model_fit_2, 1)[[1]]
 
     return(CheckModelFitEquivalence(
                 sampling_result, model_fit_1, model_fit_2,
@@ -231,7 +232,7 @@ CheckModelFitEquivalence <- function(
     model_par_list_1, model_par_list_2,
     check_grads=TRUE,
     tol=1e-8) {
-    
+
     common_par_names <- names(get_inits(sampling_result, iter=1)[[1]])
     model_draws_1 <- EvaluateModelAtDraws(
         sampling_result, model_fit_1, model_par_list_1,
@@ -243,9 +244,10 @@ CheckModelFitEquivalence <- function(
     # The log probability can differ up to a constant.
     log_prob_ok <-
         sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
+
     if (check_grads) {
-        grad_mat_1 <- model_draws_1$grad_mat[, common_par_names] 
-        grad_mat_2 <- model_draws_2$grad_mat[, common_par_names] 
+        grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ] 
+        grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ] 
         grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol
     } else {
         grad_ok <- TRUE
@@ -303,15 +305,13 @@ GetStanSensitivityFromModelFit <- function(
             sampling_result, stan_sensitivity_list,
             stan_sensitivity_list$sens_par_list, compute_grads=TRUE)
 
-    param_names <- stan_sensitivity_list$param_names
-    sens_param_names <- stan_sensitivity_list$sens_param_names
-
     # Stan takes gradients with respect to everything in the parameters block,
     # not just the hyperparameters.  Remove the rows not corresponding to
     # hyperparameters.
-    grad_mat <- model_at_draws$grad_mat
-    rownames(grad_mat) <- sens_param_names
-    grad_mat <- grad_mat[setdiff(sens_param_names, param_names),, drop=FALSE]
+    param_names <- stan_sensitivity_list$param_names
+    sens_param_names <- stan_sensitivity_list$sens_param_names
+    grad_mat <- model_at_draws$grad_mat[
+        setdiff(sens_param_names, param_names),, drop=FALSE]
 
     # Calculate the sensitivity.
     sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
