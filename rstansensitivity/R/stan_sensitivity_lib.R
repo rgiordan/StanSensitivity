@@ -124,10 +124,19 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 #' from a different model.
 #'
 #' @param sampling_result The output of Stan sampling (e.g. rstan::sampling())
-#' @param stan_data A stanfit object from a model
-#' @return A list of Stan models and parameters names which can be passed to
-#' the \code{stan_sensitivity_list} argument of
-#' functions like code{GetStanSensitivityFromModelFit}.
+#' @param model_fit A stanfit object from a model, possibly containing a
+#' superset of the parameters in sampling_result.
+#' @param A list of parameters for model_fit which can be passed to
+#' \code{unconstrain_pars} for the \code{model_fit} model.  Every parameter
+#' in \code{get_inits} applied to \code{sampling_result} must be also be found
+#' in \code{model_par_list}.
+#' @param compute_grads If FALSE, only return the log probability.
+#' @return
+#' A list with \code{lp_vec} containing a vector of log probabilities and,
+#' if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
+#' all with resepct to the parameters in \code{model_fit} at the draws in 
+#' \code{sampling_result}.  If the sampler contains multiple chains the
+#' chains are concatenated in order.
 #' @export
 EvaluateModelAtDraws <- function(
     sampling_result, model_fit, model_par_list, compute_grads=FALSE) {
@@ -136,7 +145,6 @@ EvaluateModelAtDraws <- function(
   num_samples <- sampling_result@sim$iter - num_warmup_samples
   num_chains <- sampling_result@sim$chains
 
-          
   # Check that every parameter in the sampling results is also in the model
   # parameter list.
   par_list_check <- get_inits(sampling_result, iter=1)[[1]]
@@ -194,6 +202,59 @@ EvaluateModelAtDraws <- function(
 }
 
 
+#' Check whether two stanfit objects agree on draws in \code{sampling_result}.
+#'
+#' @export
+CheckModelEquivalence <- function(
+    sampling_result, model_1, model_2, stan_data_1, stan_data_2,
+    check_grads=TRUE, tol=1e-8) {
+
+    model_fit_1 <- sampling(
+        model=model_1, data=stan_data_1,
+        algorithm="Fixed_param", iter=1, chains=1)
+    model_par_list_1 <- get_inits(model_fit_1, 1)[[1]]
+
+    model_fit_2 <- sampling(
+        model=model_2, data=stan_data_2,
+        algorithm="Fixed_param", iter=1, chains=1)
+    model_par_list_2 <- get_inits(model_fit_2, 2)[[2]]
+
+    return(CheckModelFitEquivalence(
+                sampling_result, model_fit_1, model_fit_2,
+                model_par_list_1, model_par_list_2,
+                check_grads=check_grads, tol=tol))
+}
+
+CheckModelFitEquivalence <- function(
+    sampling_result,
+    model_fit_1, model_fit_2,
+    model_par_list_1, model_par_list_2,
+    check_grads=TRUE,
+    tol=1e-8) {
+    
+    common_par_names <- names(get_inits(sampling_result, iter=1)[[1]])
+    model_draws_1 <- EvaluateModelAtDraws(
+        sampling_result, model_fit_1, model_par_list_1,
+        compute_grads=check_grads)
+    model_draws_2 <- EvaluateModelAtDraws(
+        sampling_result, model_fit_2, model_par_list_2,
+        compute_grads=check_grads)
+        
+    # The log probability can differ up to a constant.
+    log_prob_ok <-
+        sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
+    if (check_grads) {
+        grad_mat_1 <- model_draws_1$grad_mat[, common_par_names] 
+        grad_mat_2 <- model_draws_2$grad_mat[, common_par_names] 
+        grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol
+    } else {
+        grad_ok <- TRUE
+    }
+    
+    return(log_prob_ok & grad_ok)
+}
+
+
 # Evaluate at draws using the hyperparameters in sens_par_list.
 EvaluateAtDraws <- function(
     sampling_result, stan_sensitivity_list, sens_par_list,
@@ -202,7 +263,8 @@ EvaluateAtDraws <- function(
     return(EvaluateModelAtDraws(
         sampling_result,
         stan_sensitivity_list$model_sens_fit,
-        stan_sensitivity_list$sens_par_list, compute_grads=compute_grads))
+        stan_sensitivity_list$sens_par_list,
+        compute_grads=compute_grads))
 }
 
 

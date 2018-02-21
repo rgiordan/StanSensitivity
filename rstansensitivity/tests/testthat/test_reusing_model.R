@@ -53,7 +53,7 @@ GenerateTestModels <- function() {
     "
 
     WriteModelFile <- function(model_path, model_code) {
-        model_file <- file(base_model_name, "w")
+        model_file <- file(model_path, "w")
         cat(model_code, file=model_file)
         close(model_file)        
     }
@@ -76,27 +76,38 @@ GenerateTestModels <- function() {
 }
 
 
-# test_that("reusing_model_works", {
-#   set.seed(42)
-#   test_dir <- getwd()
-#   model_files <- GenerateTestModels()
-# 
-#   # Compare the generated model to the original model in which the
-#   # hyperparameter was hard-encoded, and a "bad" model which differs from
-#   # either of the two.
-#   model_gen <- stan_model(GetSamplingModelFilename(model_files$model_name))
-#   model_orig <- stan_model(model_file$orig_model_file)
-#   model_bad <- stan_model(model_file$orig_model_file)
-# 
-#   # Load the data and hyperparameters.
-#   stan_data_gen <- list(y=3.0, prior_mean=0.0)
-#   stan_data_orig <- list(y=3.0)
-#   stan_data_bad <- list(y=3.0, prior_var=2.0)
-#   stan_data_notbad <- list(y=3.0, prior_var=1.0)
-# 
-#   iter <- 2000
-#   num_chains <- 3
-#   result <- sampling(model_orig, data=stan_data_orig,
-#                      chains=num_chains, iter=iter)
-# 
-# })
+test_that("reusing_model_works", {
+  set.seed(42)
+  test_dir <- getwd()
+  model_files <- GenerateTestModels()
+
+  # Compare the generated model to the original model in which the
+  # hyperparameter was hard-encoded, and a "bad" model which differs from
+  # either of the two.
+  model_gen <- stan_model(GetSamplingModelFilename(model_files$model_name))
+  model_orig <- stan_model(model_files$orig_model_file)
+  model_bad <- stan_model(model_files$orig_model_file)
+
+  # Load the data and hyperparameters.
+  stan_data_gen <- list(y=3.0, prior_mean=0.0)
+  stan_data_orig <- list(y=3.0)
+  stan_data_bad <- list(y=3.0, prior_var=2.0)
+  stan_data_notbad <- list(y=3.0, prior_var=1.0)
+
+  iter <- 50
+  num_chains <- 3
+  sampling_result <- sampling(model_orig, data=stan_data_orig,
+                     chains=num_chains, iter=iter)
+        
+  orig_ok <- CheckModelEquivalence(
+      sampling_result, model_orig, model_gen, stan_data_orig, stan_data_gen)             
+  bad_ok <- CheckModelEquivalence(
+      sampling_result, model_bad, model_gen, stan_data_bad, stan_data_gen)             
+  notbad_ok <- CheckModelEquivalence(
+      sampling_result, model_bad, model_gen, stan_data_notbad, stan_data_gen)             
+  expect(orig_ok)
+  expect(!bad_ok)
+  expect(notbad_ok)
+
+  
+})
