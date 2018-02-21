@@ -83,18 +83,13 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     # are guaranteed to be valid, and the hyperparameters are read from
     # stan_data.
     for (par in names(model_par_list)) {
-      #cat("Copying parameter '", par, "' from the sampler\n", sep="")
       sens_par_list[[par]] <- model_par_list[[par]]
     }
     for (par in setdiff(names(model_par_list), names(sens_par_list))) {
         if (!(par %in% names(stan_data))) {
             stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
         }
-        #if (par %in% names(stan_data)) {
-        #    cat("Copying hyperparameter '", par,
-        #         "' from the data block.\n", sep="")
         sens_par_list[[par]] <- stan_data[[par]]
-        #}
     }
 
     # This is the stan fit object that we will use to evaluate the gradient
@@ -139,11 +134,13 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 #' chains are concatenated in order.
 #' @export
 EvaluateModelAtDraws <- function(
-    sampling_result, model_fit, model_par_list, compute_grads=FALSE) {
+    sampling_result, model_fit, model_par_list,
+    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf) {
 
   num_warmup_samples <- sampling_result@sim$warmup
-  num_samples <- sampling_result@sim$iter - num_warmup_samples
-  num_chains <- sampling_result@sim$chains
+  num_samples <- min(sampling_result@sim$iter - num_warmup_samples,
+                     max_num_samples)
+  num_chains <- min(sampling_result@sim$chains, max_chains)
 
   # Check that every parameter in the sampling results is also in the model
   # parameter list.
@@ -221,7 +218,8 @@ EvaluateModelAtDraws <- function(
 #' @export
 CheckModelEquivalence <- function(
     sampling_result, model_1, model_2, stan_data_1, stan_data_2,
-    check_grads=TRUE, tol=1e-8) {
+    check_grads=TRUE,
+    tol=1e-8, max_chains=1, max_num_samples=100) {
 
     model_fit_1 <- sampling(
         object=model_1, data=stan_data_1,
@@ -236,7 +234,8 @@ CheckModelEquivalence <- function(
     return(CheckModelFitEquivalence(
                 sampling_result, model_fit_1, model_fit_2,
                 model_par_list_1, model_par_list_2,
-                check_grads=check_grads, tol=tol))
+                check_grads=check_grads, tol=tol,
+                max_chains=max_chains, max_num_samples=max_num_samples))
 }
 
 
@@ -245,21 +244,24 @@ CheckModelFitEquivalence <- function(
     model_fit_1, model_fit_2,
     model_par_list_1, model_par_list_2,
     check_grads=TRUE,
-    tol=1e-8) {
+    tol=1e-8, max_chains=1, max_num_samples=100) {
 
-    common_par_names <- names(get_inits(sampling_result, iter=1)[[1]])
     model_draws_1 <- EvaluateModelAtDraws(
         sampling_result, model_fit_1, model_par_list_1,
-        compute_grads=check_grads)
+        compute_grads=check_grads,
+        max_chains=max_chains, max_num_samples=max_num_samples)
     model_draws_2 <- EvaluateModelAtDraws(
         sampling_result, model_fit_2, model_par_list_2,
-        compute_grads=check_grads)
+        compute_grads=check_grads,
+        max_chains=max_chains, max_num_samples=max_num_samples)
 
     # The log probability can differ up to a constant.
     log_prob_ok <-
         sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
 
     if (check_grads) {
+        common_par_names <-
+            setdiff(sampling_result@model_pars, "lp__")
         grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ]
         grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ]
         grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol

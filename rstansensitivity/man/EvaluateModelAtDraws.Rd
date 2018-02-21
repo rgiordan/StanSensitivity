@@ -6,7 +6,7 @@
 from a different model.}
 \usage{
 EvaluateModelAtDraws(sampling_result, model_fit, model_par_list,
-  compute_grads = FALSE)
+  compute_grads = FALSE, max_chains = Inf, max_num_samples = Inf)
 }
 \arguments{
 \item{sampling_result}{The output of Stan sampling (e.g. rstan::sampling())}
