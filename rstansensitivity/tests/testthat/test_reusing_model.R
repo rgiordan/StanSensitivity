@@ -13,12 +13,12 @@ GenerateTestModels <- function() {
     parameters {
         // This is deliberately in a different order.
         real<lower=0> sigma;
-        real mu;
+        vector[2] mu;
     }
     model {
         mu ~ normal(0.0, 1.0);
         sigma ~ exponential(1.0);
-        y ~ normal(mu, 1.0);
+        y ~ normal(sum(mu), 1.0);
     }
 
     "
@@ -31,13 +31,13 @@ GenerateTestModels <- function() {
       real prior_mean;
     }
     parameters {
-      real mu;
+      vector[2] mu;
       real<lower=0> sigma;
     }
     model {
       mu ~ normal(prior_mean, 1.0);
       sigma ~ exponential(1.0);
-      y ~ normal(mu, 1.0);
+      y ~ normal(sum(mu), 1.0);
     }
 
     "
@@ -48,13 +48,13 @@ GenerateTestModels <- function() {
         real prior_var;
     }
     parameters {
-        real mu;
+        vector[2] mu;
         real<lower=0> sigma;
     }
     model {
         mu ~ normal(0.0, prior_var);
         sigma ~ exponential(1.0);
-        y ~ normal(mu, 1.0);
+        y ~ normal(sum(mu), 1.0);
     }
 
     "
@@ -64,13 +64,13 @@ GenerateTestModels <- function() {
         real y;
     }
     parameters {
-        real theta;
+        vector[2] theta;
         real<lower=0> sigma;
     }
     model {
         theta ~ normal(0.0, 1.0);
         sigma ~ exponential(1.0);
-        y ~ normal(theta, 1.0);
+        y ~ normal(sum(theta), 1.0);
     }
 
     "

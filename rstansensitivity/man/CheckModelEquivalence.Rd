@@ -29,7 +29,7 @@ from \code{model_1} and \code{model_2}.}
 A boolean indicating whether model_1 and model_2 agree with each
 other on the samples specified in sampling_result.  Log probability is
 is compared up to a constant, and the gradients are compared on the
-parameters found sampling_result.
+parameters in common according to the unconstrained parameter names.
 }
 \description{
 Check whether two stan models objects agree on draws in

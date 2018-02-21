@@ -3,6 +3,11 @@ library(dplyr)
 library(reshape2)
 
 
+# Just a more readable shortcut for the Stan attribute.
+GetParamNames <- function(model_fit) {
+    model_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
+}
+
 #' Get the filename of the stan model to be used for sampling.
 #'
 #' @param model_name A full path to the base model name.
@@ -85,7 +90,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
     for (par in names(model_par_list)) {
       sens_par_list[[par]] <- model_par_list[[par]]
     }
-    for (par in setdiff(names(model_par_list), names(sens_par_list))) {
+    for (par in setdiff(names(sens_par_list), names(model_par_list))) {
         if (!(par %in% names(stan_data))) {
             stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
         }
@@ -99,12 +104,8 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
                            iter=1, chains=1, init=list(sens_par_list))
 
     # These names help sort through the vectors of sensitivity.
-    param_names <-
-        model_params@.MISC$stan_fit_instance$unconstrained_param_names(
-            FALSE, FALSE)
-    sens_param_names <-
-        model_sens_fit@.MISC$stan_fit_instance$unconstrained_param_names(
-            FALSE, FALSE)
+    param_names <- GetParamNames(model_params)
+    sens_param_names <- GetParamNames(model_sens_fit)
 
     return(list(model_sens_fit=model_sens_fit,
                 model_params=model_params,
@@ -155,9 +156,7 @@ EvaluateModelAtDraws <- function(
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    param_names <-
-          model_fit@.MISC$stan_fit_instance$unconstrained_param_names(
-              FALSE, FALSE)
+    param_names <- GetParamNames(model_fit)
     grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
     rownames(grad_mat) <- param_names
   } else {
@@ -214,7 +213,7 @@ EvaluateModelAtDraws <- function(
 #' @return A boolean indicating whether model_1 and model_2 agree with each
 #' other on the samples specified in sampling_result.  Log probability is
 #' is compared up to a constant, and the gradients are compared on the
-#' parameters found sampling_result.
+#' parameters in common according to the unconstrained parameter names.
 #' @export
 CheckModelEquivalence <- function(
     sampling_result, model_1, model_2, stan_data_1, stan_data_2,
@@ -260,8 +259,14 @@ CheckModelFitEquivalence <- function(
         sqrt(var(model_draws_1$lp_vec - model_draws_2$lp_vec)) < tol
 
     if (check_grads) {
+        # Ideally we would compare on the unconstrained parameter names used
+        # to generate the sampling result.  Unfortunately, it appears that if
+        # a sampling result has been saved to an Rdata file,
+        # the information necessary to run GetParamNames is not saved.
         common_par_names <-
-            setdiff(sampling_result@model_pars, "lp__")
+            intersect(rownames(model_draws_1$grad_mat),
+                      rownames(model_draws_2$grad_mat))
+        stopifnot(length(common_par_names) > 0)
         grad_mat_1 <- model_draws_1$grad_mat[common_par_names, ]
         grad_mat_2 <- model_draws_2$grad_mat[common_par_names, ]
         grad_ok <- max(abs(grad_mat_1 - grad_mat_2)) < tol
