@@ -67,16 +67,26 @@ stan_data <- list(
 
 iter <- 500
 num_chains <- 2
-result <- sampling(model, data=stan_data, chains=num_chains, iter=iter)
+sampling_result <- sampling(model, data=stan_data, chains=num_chains, iter=iter)
 
 # Mostly I will just check that these run succesfully.
 stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
-sens_result <- GetStanSensitivityFromModelFit(result, stan_sensitivity_list)
+sens_result <- GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_list)
 tidy_results <- GetTidyResult(sens_result)
 CheckTidyResults(tidy_results)
 hyperparam_df <- GetHyperparameterDataFrame(stan_sensitivity_list, stan_data)
+expect_equal(
+    filter(hyperparam_df,
+        grepl("^prior_mean", hyperparameter))$hyperparameter_val,
+    stan_data$prior_mean)
+expect_equal(
+    filter(hyperparam_df,
+        grepl("^prior_var", hyperparameter))$hyperparameter_val,
+    stan_data$prior_var)
+
 expect_equivalent(as.character(unique(hyperparam_df$hyperparameter)),
                   as.character(unique(tidy_results$hyperparameter)))
+
 
 transform_mat <- matrix(0, 2, 2 * K)
 colnames(transform_mat) <- rownames(sens_result$sens_mat)
@@ -99,4 +109,7 @@ expect_equivalent(
     filter(tidy_results, hyperparameter == "prior_mean.1")[, sens_cols] +
     filter(tidy_results, hyperparameter == "prior_mean.2")[, sens_cols])
 
+mcmc_df <- GetMCMCDataFrame(sampling_result)
+expect_equivalent(as.character(unique(mcmc_df$parameter)),
+                  as.character(unique(tidy_results$parameter)))
 })

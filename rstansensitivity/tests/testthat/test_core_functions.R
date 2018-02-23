@@ -127,7 +127,4 @@ draws_list <- EvaluateAtDraws(
 lp_col <- dim(draws_array)[3]
 expect_equal(draws_list$lp_vec, as.numeric(draws_array[,, lp_col]), tol=1e-6)
 
-################
-# Check some post-processing.
-hp_df <- GetHyperparameterDataFrame()
 })

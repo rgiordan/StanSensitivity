@@ -403,13 +403,16 @@ GetImportanceSamplingFromModelFit <- function(
 #' @export
 GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
   sens_par_list <- SetSensitivityParameterList(
-    stan_sensitivity_list$model_params, stan_sensitivity_list$model_sens_params, stan_data)
-  pars_free <- unconstrain_pars(stan_sensitivity_list$model_sens_fit, sens_par_list)
+    stan_sensitivity_list$model_sens_params,
+    stan_sensitivity_list$model_params, stan_data)
+  pars_free <- unconstrain_pars(
+      stan_sensitivity_list$model_sens_fit, sens_par_list)
   names(pars_free) <- stan_sensitivity_list$sens_param_names
   hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,
                               stan_sensitivity_list$param_names)
-  hyperparameter_df <- data.frame(hyperparameter=hyperparam_names,
-                                  hyperparameter_val=pars_free[hyperparam_names])
+  hyperparameter_df <-
+    data.frame(hyperparameter=hyperparam_names,
+               hyperparameter_val=pars_free[hyperparam_names])
   rownames(hyperparameter_df) <- NULL
   return(hyperparameter_df)
 }

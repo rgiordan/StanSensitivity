@@ -180,3 +180,23 @@ PlotSensitivities <- function(sens_df, normalized=TRUE, se_num=2) {
       ylab(y_axis_label) + xlab("Parameter")
     )
 }
+
+
+#' Convert a Stan sampling result to a form that can be joined with tidy
+#' sensitivity results.
+#'
+#' @param sampling_result The output of \code{stan::sampling}
+#' @param cols The columns of the summary to keep.
+#' @return A data frame with the MCMC reuslts that can be joined with tidy
+#' sensitivity results.
+#' @export
+GetMCMCDataFrame <- function(
+    sampling_result, cols=c("mean", "se_mean", "sd", "n_eff", "Rhat")) {
+  mcmc_result <- as.data.frame(rstan::summary(sampling_result)$summary)
+  mcmc_result$parameter <- make.names(rownames(mcmc_result))
+  rownames(mcmc_result) <- NULL
+  mcmc_result <-
+    select(mcmc_result, "parameter", cols) %>%
+    filter(parameter != "lp__")
+  return(mcmc_result)
+}
