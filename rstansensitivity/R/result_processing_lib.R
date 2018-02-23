@@ -38,7 +38,7 @@ NormalizeSensitivityMatrix <- function(sens_mat, draws_mat) {
 #' @return A new sensitivity result list for the specified linear combinations.
 #' @export
 TransformSensitivityResult <- function(sens_result, transform_matrix) {
-    stopifnot(ncol(transform_matrix) == nrow(sens_mat))
+    stopifnot(ncol(transform_matrix) == nrow(sens_result$sens_mat))
     if (is.null(rownames(transform_matrix))) {
         rownames(transform_matrix) <-
             paste("transform", 1:nrow(transform_matrix), sep="_")

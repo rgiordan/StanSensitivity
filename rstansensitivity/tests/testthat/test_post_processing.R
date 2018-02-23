@@ -5,6 +5,25 @@ rstan_options(auto_write=TRUE)
 
 context("rstansensitivity")
 
+CheckTidyResults <- function(tidy_results) {
+    expect_equal(tidy_results$sensitivity_upper,
+        tidy_results$sensitivity + 2 * tidy_results$sensitivity_se,
+        tolerance=1e-8)
+    expect_equal(tidy_results$sensitivity_lower,
+        tidy_results$sensitivity - 2 * tidy_results$sensitivity_se,
+        tolerance=1e-8)
+    expect_equal(tidy_results$normalized_sensitivity_upper,
+        tidy_results$normalized_sensitivity +
+        2 * tidy_results$normalized_sensitivity_se,
+        tolerance=1e-8)
+    expect_equal(tidy_results$normalized_sensitivity_lower,
+        tidy_results$normalized_sensitivity -
+        2 * tidy_results$normalized_sensitivity_se,
+        tolerance=1e-8)
+    PlotSensitivities(tidy_results)
+}
+
+
 test_that("basic_model_works", {
 
 # A silly model just for testing.
@@ -46,9 +65,38 @@ stan_data <- list(
     prior_mean=runif(K), prior_var=exp(runif(K))
 )
 
-iter <- 100
+iter <- 500
 num_chains <- 2
 result <- sampling(model, data=stan_data, chains=num_chains, iter=iter)
 
+# Mostly I will just check that these run succesfully.
+stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
+sens_result <- GetStanSensitivityFromModelFit(result, stan_sensitivity_list)
+tidy_results <- GetTidyResult(sens_result)
+CheckTidyResults(tidy_results)
+hyperparam_df <- GetHyperparameterDataFrame(stan_sensitivity_list, stan_data)
+expect_equivalent(as.character(unique(hyperparam_df$hyperparameter)),
+                  as.character(unique(tidy_results$hyperparameter)))
+
+transform_mat <- matrix(0, 2, 2 * K)
+colnames(transform_mat) <- rownames(sens_result$sens_mat)
+transform_mat[, "prior_mean.1"] <- 1
+transform_mat[2, "prior_mean.2"] <- 1
+rownames(transform_mat) <- c("prior_mean.1.only", "prior_mean.1p2")
+trans_sens_result <- TransformSensitivityResult(sens_result, transform_mat)
+trans_tidy_results <- GetTidyResult(trans_sens_result)
+numeric_cols <- paste("sensitivity", c("", "_se", "_upper", "_lower"), sep="")
+numeric_cols <- c(numeric_cols, paste("normalized", numeric_cols, sep="_"))
+expect_equivalent(
+    filter(trans_tidy_results,
+        hyperparameter == "prior_mean.1.only")[, numeric_cols],
+    filter(tidy_results,
+        hyperparameter == "prior_mean.1")[, numeric_cols])
+sens_cols <- c("sensitivity", "normalized_sensitivity")
+expect_equivalent(
+    filter(trans_tidy_results,
+        hyperparameter == "prior_mean.1p2")[, sens_cols],
+    filter(tidy_results, hyperparameter == "prior_mean.1")[, sens_cols] +
+    filter(tidy_results, hyperparameter == "prior_mean.2")[, sens_cols])
 
 })
