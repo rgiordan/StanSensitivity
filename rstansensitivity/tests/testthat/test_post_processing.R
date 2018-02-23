@@ -88,6 +88,7 @@ expect_equivalent(as.character(unique(hyperparam_df$hyperparameter)),
                   as.character(unique(tidy_results$hyperparameter)))
 
 
+# Check the transform.
 transform_mat <- matrix(0, 2, 2 * K)
 colnames(transform_mat) <- rownames(sens_result$sens_mat)
 transform_mat[, "prior_mean.1"] <- 1
@@ -109,7 +110,21 @@ expect_equivalent(
     filter(tidy_results, hyperparameter == "prior_mean.1")[, sens_cols] +
     filter(tidy_results, hyperparameter == "prior_mean.2")[, sens_cols])
 
+# Check the MCMC dataframe.
 mcmc_df <- GetMCMCDataFrame(sampling_result)
 expect_equivalent(as.character(unique(mcmc_df$parameter)),
                   as.character(unique(tidy_results$parameter)))
+
+# Check the perturbation.
+stan_data_perturb <- stan_data
+stan_data_perturb$prior_mean[1] <- stan_data_perturb$prior_mean[1] + 1
+sens_pred_df <- PredictSensitivityFromStanData(
+    stan_sensitivity_list, sens_result,
+    stan_data, stan_data_perturb, "prior_mean.1.only")
+expect_equivalent(
+    filter(sens_pred_df,
+        hyperparameter == "prior_mean.1.only")[, numeric_cols],
+    filter(tidy_results,
+        hyperparameter == "prior_mean.1")[, numeric_cols])
+
 })

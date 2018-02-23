@@ -200,3 +200,36 @@ GetMCMCDataFrame <- function(
     filter(parameter != "lp__")
   return(mcmc_result)
 }
+
+
+#' Use the linear approximation to predict the sensitivity to a new
+#' stan data list.
+#'
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @param stan_result The output of \code{GetStanSensitivityFromModelFit}
+#' @param stan_data The original stan data at which
+#' \code{stan_sensitivity_list} was calculated.
+#' @param stan_data_perturb A new stan data file with different hyperparameters.
+#' @param description A hyperparameter name to describe this perturbation.
+#' @return A tidy sensitivity dataframe where the sensitivity is in the
+#' direction of the difference between the hyperparameters in the two stan
+#' data lists.
+#' @export
+PredictSensitivityFromStanData <- function(
+    stan_sensitivity_list, sens_result, stan_data, stan_data_perturb,
+    description="perturbation") {
+
+    hyperparameter_df <-
+      inner_join(
+          GetHyperparameterDataFrame(stan_sensitivity_list, stan_data) %>%
+               rename(hyperparameter_val_orig=hyperparameter_val),
+          GetHyperparameterDataFrame(stan_sensitivity_list, stan_data_perturb),
+               by="hyperparameter") %>%
+      mutate(hyperparameter_diff=hyperparameter_val - hyperparameter_val_orig)
+    linear_comb <- matrix(hyperparameter_df$hyperparameter_diff, nrow=1)
+    colnames(linear_comb) <- hyperparameter_df$hyperparameter
+    linear_comb <- linear_comb[, rownames(sens_result$sens_mat), drop=FALSE]
+    rownames(linear_comb) <- description
+    sens_result_pert <- TransformSensitivityResult(sens_result, linear_comb)
+    return(GetTidyResult(sens_result_pert))
+}
