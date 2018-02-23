@@ -4,7 +4,7 @@
 \alias{SummarizeSensitivityMatrices}
 \title{Make a tidy dataframe out of a sensitivity matrix and its standard errors.}
 \usage{
-SummarizeSensitivityMatrices(sens_mat, sens_se, measure)
+SummarizeSensitivityMatrices(sens_mat, sens_se, measure, num_se = 2)
 }
 \arguments{
 \item{sens_mat}{A matrix of sensitivities.}
@@ -12,6 +12,8 @@ SummarizeSensitivityMatrices(sens_mat, sens_se, measure)
 \item{sens_se}{A matrix of standard errors of \code{sens_mat}.}
 
 \item{measure}{What to call these sensitivites.}
+
+\item{num_se}{The number of standard errors for the upper and lower bounds.}
 }
 \value{
 A tidy dataframe with columns for the parameters, hyperparameters,

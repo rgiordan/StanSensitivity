@@ -30,6 +30,31 @@ NormalizeSensitivityMatrix <- function(sens_mat, draws_mat) {
 }
 
 
+#' Make a tidy dataframe out of a sensitivity matrix and its standard errors.
+#' @param sens_result The output of \code{GetStanSensitivityFromModelFit}.
+#' @param transform_matrix A matrix where each row is a linear combination
+#' of parameters for which to calculate sensitivity.  The row names should
+#' describe the linear combinations.
+#' @return A new sensitivity result list for the specified linear combinations.
+#' @export
+TransformSensitivityResult <- function(sens_result, transform_matrix) {
+    stopifnot(ncol(transform_matrix) == nrow(sens_mat))
+    if (is.null(rownames(transform_matrix))) {
+        rownames(transform_matrix) <-
+            paste("transform", 1:nrow(transform_matrix), sep="_")
+    }
+    transform_sens_result <- sens_result
+    transform_sens_result$sens_mat <-
+      transform_matrix %*% transform_sens_result$sens_mat
+    # The columns are normalized so this preserves the normalization.
+    transform_sens_result$sens_mat_normalized <-
+      transform_matrix %*% transform_sens_result$sens_mat_normalized
+    transform_sens_result$grad_mat <-
+      transform_matrix %*% transform_sens_result$grad_mat
+    return(transform_sens_result)
+}
+
+
 SensitivityMatrixToDataframe <- function(
     sens_mat, hyperparameter_names, parameter_names) {
   colnames(sens_mat) <- parameter_names
@@ -44,10 +69,13 @@ SensitivityMatrixToDataframe <- function(
 #' @param sens_mat A matrix of sensitivities.
 #' @param sens_se A matrix of standard errors of \code{sens_mat}.
 #' @param measure What to call these sensitivites.
+#' @param num_se The number of standard errors for the upper and lower bounds.
 #' @return A tidy dataframe with columns for the parameters, hyperparameters,
 #' sensitivities, and their standard errors.
 #' @export
-SummarizeSensitivityMatrices <- function(sens_mat, sens_se, measure) {
+SummarizeSensitivityMatrices <- function(
+    sens_mat, sens_se, measure, num_se=2) {
+
     sens_df <- rbind(
       SensitivityMatrixToDataframe(
         sens_mat,
@@ -58,7 +86,18 @@ SummarizeSensitivityMatrices <- function(sens_mat, sens_se, measure) {
         sens_se,
         hyperparameter_names=rownames(sens_se),
         parameter_names=colnames(sens_se)) %>%
-        mutate(measure=paste(measure, "se", sep="_"))) %>%
+        mutate(measure=paste(measure, "se", sep="_")),
+      SensitivityMatrixToDataframe(
+        sens_mat + num_se * sens_se,
+        hyperparameter_names=rownames(sens_mat),
+        parameter_names=colnames(sens_mat)) %>%
+        mutate(measure=paste(measure, "upper", sep="_")),
+      SensitivityMatrixToDataframe(
+        sens_mat - num_se * sens_se,
+        hyperparameter_names=rownames(sens_mat),
+        parameter_names=colnames(sens_mat)) %>%
+        mutate(measure=paste(measure, "lower", sep="_"))
+      ) %>%
       dcast(hyperparameter + parameter ~ measure) %>%
       filter(parameter != "lp__")
     return(sens_df)
@@ -68,6 +107,7 @@ SummarizeSensitivityMatrices <- function(sens_mat, sens_se, measure) {
 #' tidy dataframe with standard errors.
 #'
 #' @param sens_result The output of \code{GetStanSensitivityFromModelFit}.
+#' @param num_se The number of standard errors for the upper and lower bounds.
 #' @return A dataframe summarizing the sensitivity of the model posterior means
 #' to the hyperparameters.  The reported standard errors are based on a
 #' multivariate normal and delta method approximation which may not be
@@ -86,7 +126,7 @@ SummarizeSensitivityMatrices <- function(sens_mat, sens_se, measure) {
 #'     {The estimated Monte Carlo error of \code{normalized_sensitivity}.}
 #' }
 #' @export
-GetTidyResult <- function(sens_result) {
+GetTidyResult <- function(sens_result, num_se=2) {
     sens_se <- GetSensitivityStandardErrors(
         sens_result$draws_mat, sens_result$grad_mat,
         fix_mean=FALSE, normalized=FALSE)
@@ -94,10 +134,11 @@ GetTidyResult <- function(sens_result) {
         sens_result$draws_mat, sens_result$grad_mat,
         fix_mean=FALSE, normalized=TRUE)
     sens_df <- SummarizeSensitivityMatrices(
-        sens_result$sens_mat, sens_se, measure="sensitivity")
+        sens_result$sens_mat, sens_se,
+        measure="sensitivity", num_se=num_se)
     sens_norm_df <- SummarizeSensitivityMatrices(
         sens_result$sens_mat_normalized, norm_sens_se,
-        measure="normalized_sensitivity")
+        measure="normalized_sensitivity", num_se=num_se)
 
     result <- inner_join(
         sens_df,sens_norm_df, by=c("hyperparameter", "parameter"))

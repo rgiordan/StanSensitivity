@@ -5,7 +5,7 @@ rstan_options(auto_write=TRUE)
 
 test_that("basic_functionality", {
   TypeForTest <- function(typename, varname=NULL, dim="", dist=NULL) {
-  if (is.null(varname)) { 
+  if (is.null(varname)) {
     varname <- paste(typename, "x", sep="_")
   }
   declaration <- paste("  ", typename, dim, " ", varname, ";", sep="")
@@ -55,7 +55,7 @@ stan_data <- list(id_mat=diag(3), theta=1)
 sampling_result <- sampling(model, chains=num_chains, iter=300, data=stan_data)
 
 sens_list <- GetStanSensitivityModel(model_name, stan_data)
-    
+
 draws_array <- extract(sampling_result, permute=FALSE)
 num_warmup_samples <- sampling_result@sim$warmup
 num_samples <- sampling_result@sim$iter - num_warmup_samples
@@ -85,7 +85,7 @@ expect_true(sum(abs(par_free_1 - par_free_2)) > 0.01)
 
 for (par in names(par_list_2)) {
   sens_list[[par]] <- par_list_1[[par]]
-  par_list_2[[par]] <- par_list_1[[par]]  
+  par_list_2[[par]] <- par_list_1[[par]]
 }
 par_free_2 <- unconstrain_pars(sampling_result, par_list_2)
 
@@ -127,5 +127,7 @@ draws_list <- EvaluateAtDraws(
 lp_col <- dim(draws_array)[3]
 expect_equal(draws_list$lp_vec, as.numeric(draws_array[,, lp_col]), tol=1e-6)
 
+################
+# Check some post-processing.
+hp_df <- GetHyperparameterDataFrame()
 })
-
