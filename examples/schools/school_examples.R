@@ -30,8 +30,11 @@ num_samples <- 2500
 sampling_file <- paste(model_name, "_sampling.Rdata", sep="")
 if (!file.exists(sampling_file)) {
   print("Running sampler.")
+  sampling_time <- time.time()
   sampling_result <- sampling(model, data=stan_data, chains=1, iter=(num_samples + num_warmup_samples))
-  save(sampling_result, file=sampling_file)
+  sampling_time <- time.time() - sampling_time
+  save(sampling_result, sampling_result, sampling_time,
+       file=sampling_file)
 } else {
   print(sprintf("Loading cached samples from %s", sampling_file))
   load(sampling_file)  
@@ -67,9 +70,12 @@ stan_data_perturb[["R"]][3, 3] <- stan_data_perturb[["R"]][3, 3] + epsilon
 perturbed_sampling_file <- paste(model_name, "_perturbed_sampling.Rdata", sep="")
 if (!file.exists(perturbed_sampling_file)) {
   print("Running sampler.")
+  sampling_time_perturb <- time.time()
   sampling_result_perturb <- sampling(model, data=stan_data_perturb, chains=1,
                                       iter=(num_samples + num_warmup_samples))
-  save(sampling_result_perturb, stan_data_perturb, file=perturbed_sampling_file)
+  sampling_time_perturb <- time.time() - sampling_time_perturb
+  save(sampling_result_perturb, stan_data_perturb, sampling_time_perturb,
+       file=perturbed_sampling_file)
 } else {
   print(sprintf("Loading cached perturbed samples from %s", perturbed_sampling_file))
   load(perturbed_sampling_file)  
