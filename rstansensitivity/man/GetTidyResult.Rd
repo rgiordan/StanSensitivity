@@ -5,10 +5,12 @@
 \title{Process the results of GetStanSensitivityFromModelFit into a
 tidy dataframe with standard errors.}
 \usage{
-GetTidyResult(sens_result)
+GetTidyResult(sens_result, num_se = 2)
 }
 \arguments{
 \item{sens_result}{The output of \code{GetStanSensitivityFromModelFit}.}
+
+\item{num_se}{The number of standard errors for the upper and lower bounds.}
 }
 \value{
 A dataframe summarizing the sensitivity of the model posterior means

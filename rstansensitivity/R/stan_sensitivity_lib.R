@@ -53,6 +53,39 @@ GenerateSensitivityFromModel <- function(
 }
 
 
+#' Get a legal version of the sensitivity parameters in a list that can
+#' be passed to a sensitivity model fit object.
+#'
+#' @param model_sens_params A stanfit object with the sensitivity model
+#' parameters.  In order to guarantee legal initial values, it may be
+#' preferable to use an empty model block.
+#' @param model_sens_params A stanfit object for the original model.
+#' @param stan_data The stan data list for the original model with
+#' hyperparameters specified for reading in the data block.  Each hyperparameter
+#' in the model_sens_params stanfit model must be specified in \code{stan_data}.
+#' @return A list of valid model parameters than can be passed to the
+#' sensivitiy model, in which the sampled parameters are taken from
+#' \code{model_params} and the hyperparameters are taken from \code{stan_data}.
+#' @export
+SetSensitivityParameterList <- function(
+    model_sens_params, model_params, stan_data) {
+
+    sens_par_list <- get_inits(model_sens_params)[[1]]
+    model_par_list <- get_inits(model_params)[[1]]
+
+    for (par in names(model_par_list)) {
+      sens_par_list[[par]] <- model_par_list[[par]]
+    }
+    for (par in setdiff(names(sens_par_list), names(model_par_list))) {
+        if (!(par %in% names(stan_data))) {
+            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
+        }
+        sens_par_list[[par]] <- stan_data[[par]]
+    }
+    return(sens_par_list)
+}
+
+
 #' Compile the sensitivity model and get a stanfit object and related
 #' information.
 #'
@@ -80,22 +113,8 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
              data=stan_data, algorithm="Fixed_param",
              iter=1, chains=1)
 
-    sens_par_list <- get_inits(model_sens_params)[[1]]
-    model_par_list <- get_inits(model_params)[[1]]
-
-    # Get a legal version of the sensitivity parameters in a list that can
-    # be passed to a model fit object.  The parameters read from model_par_list
-    # are guaranteed to be valid, and the hyperparameters are read from
-    # stan_data.
-    for (par in names(model_par_list)) {
-      sens_par_list[[par]] <- model_par_list[[par]]
-    }
-    for (par in setdiff(names(sens_par_list), names(model_par_list))) {
-        if (!(par %in% names(stan_data))) {
-            stop(sprintf("Hyperparameter %s not found in the stan_data.", par))
-        }
-        sens_par_list[[par]] <- stan_data[[par]]
-    }
+    sens_par_list <- SetSensitivityParameterList(
+        model_sens_params, model_params, stan_data)
 
     # This is the stan fit object that we will use to evaluate the gradient
     # of the log probability at the MCMC draws.
@@ -373,4 +392,27 @@ GetImportanceSamplingFromModelFit <- function(
     return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
                 eff_num_imp_samples=eff_num_imp_samples,
                 imp_means=imp_means))
+}
+
+
+#' Get a dataframe with the hyperparameter values contained in a stan data list.
+#'
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @param stan_data The Stan data for the original model.
+#' @return A tidy dataframe with the hyperparameter names and values.
+#' @export
+GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
+  sens_par_list <- SetSensitivityParameterList(
+    stan_sensitivity_list$model_sens_params,
+    stan_sensitivity_list$model_params, stan_data)
+  pars_free <- unconstrain_pars(
+      stan_sensitivity_list$model_sens_fit, sens_par_list)
+  names(pars_free) <- stan_sensitivity_list$sens_param_names
+  hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,
+                              stan_sensitivity_list$param_names)
+  hyperparameter_df <-
+    data.frame(hyperparameter=hyperparam_names,
+               hyperparameter_val=pars_free[hyperparam_names])
+  rownames(hyperparameter_df) <- NULL
+  return(hyperparameter_df)
 }
