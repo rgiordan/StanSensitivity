@@ -18,7 +18,7 @@ exactly `1`, we might hope that the expectation of the parameter `mu`
 doesn't depend too strongly on the precise value of `y_var`.
 Here is a graph of the actual dependence (in blue):
 
-![Sensitivity graph](IllustrativeGraph-1.png)
+![Sensitivity graph](doc/IllustrativeGraph-1.png)
 
 Evaluating the exact dependence of posterior expectations on the hyperparameters typically requires re-fitting the model many times,
 which can be expensive.  That is what we did to form the above graph.
@@ -42,6 +42,37 @@ There are some caveats to be aware of.
 a lot of divergent transitions in your sampling run, the sensitivities probably
 aren't correct.
 6. This package is still in "alpha" -- that is, in development.  **If you want to use it for something important, please contact me (the package author), and I'll be happy to work with you to make sure it's behaving as expected.**  (In fact, feel free to contact me even if what you're doing is not important.)
+
+# Formal definitions
+
+Suppose we have an inference problem with the following quantities:
+
+![variable definition](doc/variable_def.png)
+
+To perform Bayesian inference, we specify a prior and likelihood which
+determine the posterior distribution.
+
+![posterior definition](doc/posterior_def.png)
+
+In Stan, the parameters are declared in the `parameters` block, the data
+is declared in the `data` block, and hyperparameters are either hard-coded
+explicity in the `model` block or passed in through the `data` block.
+In the `model` block, the user specifies the prior and likelihood.
+Stan uses Markov Chain Monte Carlo to produce approximate draws from the
+posterior distribution for a particular choice of the hyperparameters.
+
+Suppose we are interested in the posterior mean of a particular quanity.
+
+![expectation definition](doc/expectation_def.png)
+
+Our package uses MCMC draws to estimate the following quantities:
+
+![sensitivity definition](doc/sensitivity_def.png)
+
+Because changes in posterior expectations are typically only meaningful if
+they are an appreciable proportion of the posterior standard deviation,
+the normalized senstivity is often a more meaningful number.
+
 
 # How to use it
 
@@ -153,7 +184,7 @@ if you set `rstan_options(auto_write=TRUE)` the compiled model will be cached.
 draws from the original Stan run.  `GetTidyResult` packs the output into a
 tidy dataframe.  `PlotSensitivities` then hopefully makes a graph like this:
 
-![Negative Bionimal Output](negative_binomial_example_output.png)
+![Negative Bionimal Output](doc/negative_binomial_example_output.png)
 *Negative binomial example*
 
 ### Check your conclusions!
@@ -179,14 +210,14 @@ To help with (1), we do offer the option of reporting the sensitivity divded by 
 posterior standard deviation for each parameter.  We call this "normalized
 sensitivity":
 
-![Normalized sensitivity formula](normalized_sensitivity_formula.png)
+![sensitivity definition](doc/sensitivity_def.png)
 
 If you've decided on answers to (1) and (2), and are willing to at least
 tentatively that the answer to (3) is "yes", then you can use the linear
 approximation to determine whether the range of hyperparameters can cause
 the expectation to change by unacceptably large amounts.
 
-![Robustness and sensitivity](robustness_and_sensitivity.png)
+![Robustness and sensitivity](doc/robustness_and_sensitivity.png)
 
 In the figure "Negative binomial example" above, suppose we had decided that `cauchy_loc_alpha` might vary from -4 to 4, and that a change of any parameter greater than one posterior standard deviation would be a problem.  This would occur if any parameter had a normalized sensitivity greater than in absolute value than 1 / 4 = 0.25.  However, the most sensitive parameter to `cauchy_loc_alpha` is `alpha`, and its normalized sensitivity is very likely less than 0.05 in magnitude.  So we would decide that sensitivity to `cauchy_loc_alpha` is not a problem -- as long as we believe that the dependence of all the expectations are linear in `cauchy_loc_alpha` between -4 and 4.
 
