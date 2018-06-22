@@ -87,7 +87,7 @@ Once you've done that, there are five steps:
 2. In R, run the function `GenerateSensitivityFromModel` on the model with a hyperparameters block. This will generate a few `.stan` files, including a model that is equilvant to the original model with hyperparameters in the data block.
 3. Run Stan as usual on the original model with fixed hyperparameters.
 4. Using Stan's output, run a few additional commands to calcualte the sensitivities.  Graph and explore.
-5. Guided by the sensitivitiy analysis, verify the results by actually re-fitting with new values of the hyperparameters.
+5. Guided by the sensitivity analysis, verify the results by actually re-fitting with new values of the hyperparameters.
 
 More details now follow.
 Some examples can be found in
@@ -127,7 +127,7 @@ hyperparameters {
 ```
 **Note: hyperparameters must be real-valued and unconstrained.**  There are currently no checks for this -- the sensitivity analysis will simply crash or not make sense!  (If there are constraints, it will silently report sensitivity to the unconstrained value, not the constrained value.)
 
-You alos need to put the base values of your hyperparameter in the data file.  In the `negative_binomial` example, you'll want to put lines like `cauchy_loc_alpha <- 0` in the data file `examples/negative_binomial.data.R`.
+You also need to put the base values of your hyperparameter in the data file.  In the `negative_binomial` example, you'll want to put lines like `cauchy_loc_alpha <- 0` in the data file `examples/negative_binomial.data.R`.
 
 ### Run `GenerateSensitivityFromModel` in R.
 
@@ -221,7 +221,7 @@ the expectation to change by unacceptably large amounts.
 
 In the figure "Negative binomial example" above, suppose we had decided that `cauchy_loc_alpha` might vary from -4 to 4, and that a change of any parameter greater than one posterior standard deviation would be a problem.  This would occur if any parameter had a normalized sensitivity greater than in absolute value than 1 / 4 = 0.25.  However, the most sensitive parameter to `cauchy_loc_alpha` is `alpha`, and its normalized sensitivity is very likely less than 0.05 in magnitude.  So we would decide that sensitivity to `cauchy_loc_alpha` is not a problem -- as long as we believe that the dependence of all the expectations are linear in `cauchy_loc_alpha` between -4 and 4.
 
-For a more in-depth discussion of the relationship between sensitivity and robustness, see Appendix C of our paper [1].
+For a more in-depth discussion of the relationship between sensitivity and robustness, see Appendix C of our paper [3].
 
 # References
 
