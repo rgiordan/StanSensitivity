@@ -1,10 +1,10 @@
 Package: rstansensitivity
 Title: Tools for calculating hyperparameter sensitivity in Stan.
-Version: 0.0.0.9000
-Authors@R: person("Ryan", "Giordano", email = "rgiordano@berkeley.edu", role = c("aut", "cre"))
-Maintainer@R: person("Ryan", "Giordano", email = "rgiordano@berkeley.edu", role = c("aut", "cre"))
+Version: 0.0.1.0000
+Authors@R: person("Ryan", "Giordano", email = "rgiordan@mit.edu", role = c("aut", "cre"))
+Maintainer@R: person("Ryan", "Giordano", email = "rgiordan@mit.edu", role = c("aut", "cre"))
 Description: Use Stan's autodifferentiation capabilities to automatically calculate Monte Carlo estimates of local sensitivity of posterior means to hyperparameters.
-Depends: R (>= 3.2.3), rstan, dplyr, reshape2
+Depends: R (>= 3.2.3), rstan, dplyr, reshape2, tidybayes
 License: ALv2
 Encoding: UTF-8
 LazyData: true
