@@ -11,7 +11,10 @@ GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
     arg_draws <- cbind(x_draws * y_draws, x_draws, y_draws)
     arg_cov_mat <- mcmcse::mcse.multi(arg_draws)$cov
     grad_g <- c(1, -1 * y_mean, -1 * x_mean)
-    g_se <- as.numeric(sqrt(t(grad_g) %*% arg_cov_mat %*% grad_g / nrow(arg_draws)))
+    g_se <- as.numeric(
+        sqrt(t(grad_g) %*%
+        arg_cov_mat %*%
+        grad_g / nrow(arg_draws)))
   }
   return(g_se)
 }

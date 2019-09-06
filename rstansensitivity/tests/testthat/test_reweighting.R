@@ -1,9 +1,13 @@
+#!/usr/bin/env Rscript
+
 library(rstan)
 library(rstansensitivity)
 library(testthat)
 rstan_options(auto_write=TRUE)
 
-test_that("exact_derivatives_correct") {
+context("rstansensitivity")
+
+test_that("exact_derivatives_correct", {
     set.seed(42)
     model <- rstan::stan_model("test_models/reweighting_test.stan")
 
@@ -51,8 +55,11 @@ test_that("exact_derivatives_correct") {
     stopifnot(abs(tidy_summary$mean - mu_derivs$muhat) /
               tidy_summary$se_mean < 2.5)
     Derivative <- GetWeightMatrixDerivative(stanfit)
-    mcmc_dmu_dw <- Derivative(as.matrix(stanfit, "mu"))
-    expect_equal(mu_derivs$dmu_dw, mcmc_dmu_dw, tol=1e-6)
+    mu_draws <- as.matrix(stanfit, "mu")
+    mcmc_dmu_dw <- Derivative(mu_draws)
+    print(max(abs(mu_derivs$dmu_dw - mcmc_dmu_dw)))
+    expect_true(max(abs(mu_derivs$dmu_dw - mcmc_dmu_dw)) < 0.005)
+    #expect_equal(mu_derivs$dmu_dw, mcmc_dmu_dw, tol=0.005)
 
     # Test some randomly chosen second derivatives.
     SecondDerivative <- GetWeightMatrixSecondDerivative(stanfit)
@@ -69,11 +76,11 @@ test_that("exact_derivatives_correct") {
       do.call(bind_rows, lapply(1:100, function(x) { LeaveKOutError() })) %>%
       mutate(err=d2_mcmc - d2, rel_error=abs(err) / max(abs(d2)))
     expect_true(max(d2_df$rel_error) < 0.15)
-}
+})
 
 
 
-test_that("multiple_parameters_work") {
+test_that("multiple_parameters_work", {
     set.seed(42)
 
     model <- rstan::stan_model("test_models/reweighting2_test.stan")
@@ -140,4 +147,4 @@ test_that("multiple_parameters_work") {
 
     expect_true(all(pred_df1 == pred_df2, na.rm=TRUE))
     expect_true(all(pred_df1$rel_error < 0.07))
-}
+})

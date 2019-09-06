@@ -1,7 +1,7 @@
 GetTidySummary <- function(stanfit, ..., spread=FALSE) {
   # Get a tidy version of a Stan summary.
   pars <- enquos(...)
-  summary_mat <- t(summary(stanfit)$summary)
+  summary_mat <- t(rstan::summary(stanfit)$summary)
   tidy_summary <-
     gather_draws(summary_mat, !!!pars) %>%
     inner_join(data.frame(.draw=1:nrow(summary_mat),
