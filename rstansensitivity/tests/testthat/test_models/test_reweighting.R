@@ -3,7 +3,7 @@ library(rstansensitivity)
 library(testthat)
 rstan_options(auto_write=TRUE)
 
-test_that("exact_derivatives") {
+test_that("exact_derivatives_correct") {
     set.seed(42)
     model <- rstan::stan_model("test_models/reweighting_test.stan")
 
@@ -19,7 +19,7 @@ test_that("exact_derivatives") {
     )
 
     num_mcmc_samples <- 80000
-    chains <- 4
+    chains <- 1
     stanfit <- sampling(model, data=stan_data,
                         chains=chains, iter=num_mcmc_samples)
 
@@ -69,4 +69,75 @@ test_that("exact_derivatives") {
       do.call(bind_rows, lapply(1:100, function(x) { LeaveKOutError() })) %>%
       mutate(err=d2_mcmc - d2, rel_error=abs(err) / max(abs(d2)))
     expect_true(max(d2_df$rel_error) < 0.15)
+}
+
+
+
+test_that("multiple_parameters_work") {
+    set.seed(42)
+
+    model <- rstan::stan_model("test_models/reweighting2_test.stan")
+
+    n_obs <- 100
+    x_dim <- 3
+    mu_true <- runif(x_dim)
+    sigma_true <- 0.4
+    stan_data <- list(
+      n_obs=n_obs,
+      x_dim=x_dim,
+      x=(matrix(rnorm(n_obs * x_dim), nrow=n_obs) + mu_true) * sigma_true,
+      w=rep(1, n_obs)
+    )
+
+    num_mcmc_samples <- 3000
+    chains <- 1
+    stanfit <- sampling(model, data=stan_data,
+                        chains=chains, iter=num_mcmc_samples)
+
+    stan_data_w <- stan_data
+    stan_data_w$w <- as.numeric(rmultinom(1, n_obs, rep(1 / n_obs, n_obs)))
+    stanfit_w <- sampling(model, data=stan_data_w,
+                          chains=chains, iter=num_mcmc_samples)
+    mcmc_df <-
+      gather_draws(stanfit_w, mu[i], sigma) %>%
+      group_by(i, .variable) %>%
+      summarize(mean=mean(.value), draw_sd=sd(.value))
+
+    TidyPredict <- GetTidyWeightPredictor(stanfit=stanfit, mu[i], log_sigma)
+
+    GetPredDf <- function(TidyPredict) {
+      inner_join(
+        TidyPredict(stan_data_w$w),
+        mcmc_df,
+        by=c("i", ".variable")) %>%
+        mutate(error=pred_mean - mean,
+               rel_error=abs(pred_mean - mean) / draw_sd)
+    }
+
+    pred_df1 <-
+      GetTidyWeightPredictor(
+          stanfit=stanfit, mu[i], sigma) %>%
+      GetPredDf()
+
+    draws <- as.matrix(stanfit, pars=c("mu", "sigma"))
+    MatrixPredict <- GetWeightMatrixPredictor(stanfit)
+    pred_df2 <-
+      GetTidyWeightPredictor(
+          draws=draws, PredictDiff=MatrixPredict, mu[i], sigma) %>%
+      GetPredDf()
+
+
+    tidy_summary <- GetTidySummary(stanfit, mu[i], log_sigma, spread=TRUE)
+    tidy_summary_w <- GetTidySummary(stanfit_w, mu[i], log_sigma, spread=TRUE)
+    pred_df1 %>%
+      inner_join(
+        select(tidy_summary, i, .variable, se_mean),
+        by=c(".variable", "i")) %>%
+      inner_join(
+        select(tidy_summary_w, i, .variable, se_mean),
+        by=c(".variable", "i"),
+        suffix=c("", "_w"))
+
+    expect_true(all(pred_df1 == pred_df2, na.rm=TRUE))
+    expect_true(all(pred_df1$rel_error < 0.07))
 }
