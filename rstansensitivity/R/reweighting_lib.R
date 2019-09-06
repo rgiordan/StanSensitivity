@@ -2,12 +2,41 @@ library(tidybayes)
 library(dplyr)
 
 
-GetWeightMatrixPredictor <- function(stanfit, log_lik_name="log_lik") {
+GetWeightMatrixSecondDerivative <- function(stanfit, log_lik_name="log_lik") {
+  warning("GetWeightMatrixSecondDerivative is not yet unit tested.")
+
+  log_lik <- t(as.matrix(stanfit, log_lik_name))
+  log_lik <- log_lik - rowMeans(log_lik)
+
+  SecondDerivative <- function(w1, w2, draws, base_w=1) {
+    log_lik1 <- t(w1 - base_w) %*% log_lik
+    log_lik2 <- t(w2 - base_w) %*% log_lik
+    d2dw_mat <- log_lik1 * log_lik2
+    d2dw_mat <- d2dw_mat - mean(d2dw_mat)
+    d2dw_mat %*% draws / nrow(draws)
+  }
+
+  return(SecondDerivative)
+}
+
+
+GetWeightMatrixDerivative <- function(stanfit, log_lik_name="log_lik") {
     log_lik <- t(as.matrix(stanfit, log_lik_name))
     log_lik <- log_lik - rowMeans(log_lik)
 
+    Derivative <- function(draws) {
+        log_lik %*% draws / nrow(draws)
+    }
+
+    return(Derivative)
+}
+
+
+GetWeightMatrixPredictor <- function(stanfit, log_lik_name="log_lik") {
+    Derivative <- GetWeightMatrixDerivative(
+        stanfit=stanfit, log_lik_name=log_lik_name)
     PredictDiff <- function(w, draws, base_w=1) {
-        t(w - base_w) %*% log_lik %*% draws / nrow(draws)
+        t(w - base_w) %*% Derivative(draws)
     }
 
     return(PredictDiff)
