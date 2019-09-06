@@ -21,16 +21,16 @@ CleanGather <- function(mat, ...) {
 }
 
 
-GetTidyWeightPredictor <- function(stanfit=NULL,
+GetTidyWeightPredictor <- function(...,
+                                   stanfit=NULL,
                                    PredictDiff=NULL,
                                    draws=NULL,
-                                   base_w=1,
-                                   ...) {
+                                   base_w=1) {
     pars <- enquos(...)
-    if (xor(is.null(stanfit), is.null(PredictDiff))) {
+    if (!xor(is.null(stanfit), is.null(PredictDiff))) {
         stop("You must specify `stanfit` or `PredictDiff` but not both.")
     }
-    if (xor(is.null(stanfit), is.null(draws))) {
+    if (!xor(is.null(stanfit), is.null(draws))) {
         stop("You must specify `stanfit` or `draws` but not both.")
     }
     if (!is.null(stanfit)) {
@@ -38,12 +38,12 @@ GetTidyWeightPredictor <- function(stanfit=NULL,
         # Take the quoted variables, convert to strings, and strip the index
         # for passing to Stan directly,
         par_names <-
-          lapply(dots, as_label) %>%
+          lapply(pars, as_label) %>%
           sapply(function(x) { sub("\\[.*$", "", x) })
         draws <- as.matrix(stanfit, par_names)
     }
     par_means <-
-        CleanGather(t(colMeans(draws))) %>%
+        CleanGather(t(colMeans(draws)), !!!pars) %>%
         rename(base_mean=.value)
     join_vars <- setdiff(names(par_means), "base_mean")
 
@@ -51,7 +51,7 @@ GetTidyWeightPredictor <- function(stanfit=NULL,
         pred_mat <- PredictDiff(w=w, draws=draws, base_w=base_w)
         pred_df <-
           inner_join(
-            CleanGather(pred_mat) %>%
+            CleanGather(pred_mat, !!!pars) %>%
               rename(pred_diff=.value),
             par_means,
             by=join_vars) %>%
