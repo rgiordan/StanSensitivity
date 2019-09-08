@@ -12,3 +12,5 @@
   mu ~ normal(prior_mean, 1.0);
   y ~ normal(mu, 1.0);
   }
+
+  

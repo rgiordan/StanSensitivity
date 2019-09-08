@@ -8,5 +8,5 @@ Depends: R (>= 3.2.3), rstan, dplyr, reshape2, tidybayes
 License: ALv2
 Encoding: UTF-8
 LazyData: true
-Suggests: testthat
-RoxygenNote: 6.0.1
+Suggests: testthat, pkgdown, roxygen2
+RoxygenNote: 6.1.1

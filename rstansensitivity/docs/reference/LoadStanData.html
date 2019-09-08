@@ -6,8 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Process the results of GetStanSensitivityFromModelFit into a
-tidy dataframe with standard errors. — GetTidyResult • rstansensitivity</title>
+<title>Execute an R file and store its environment variables in a list. — LoadStanData • rstansensitivity</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -33,11 +32,9 @@ tidy dataframe with standard errors. — GetTidyResult • rstansensitivity</tit
 
 
 
-<meta property="og:title" content="Process the results of GetStanSensitivityFromModelFit into a
-tidy dataframe with standard errors. — GetTidyResult" />
+<meta property="og:title" content="Execute an R file and store its environment variables in a list. — LoadStanData" />
 
-<meta property="og:description" content="Process the results of GetStanSensitivityFromModelFit into a
-tidy dataframe with standard errors." />
+<meta property="og:description" content="Execute an R file and store its environment variables in a list." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -101,53 +98,31 @@ tidy dataframe with standard errors." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Process the results of GetStanSensitivityFromModelFit into a
-tidy dataframe with standard errors.</h1>
+    <h1>Execute an R file and store its environment variables in a list.</h1>
     
-    <div class="hidden name"><code>GetTidyResult.Rd</code></div>
+    <div class="hidden name"><code>LoadStanData.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Process the results of GetStanSensitivityFromModelFit into a
-tidy dataframe with standard errors.</p>
+    <p>Execute an R file and store its environment variables in a list.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>GetTidyResult</span>(<span class='no'>sens_result</span>, <span class='kw'>num_se</span> <span class='kw'>=</span> <span class='fl'>2</span>)</pre>
+    <pre class="usage"><span class='fu'>LoadStanData</span>(<span class='no'>data_file</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>sens_result</th>
-      <td><p>The output of <code>GetStanSensitivityFromModelFit</code>.</p></td>
-    </tr>
-    <tr>
-      <th>num_se</th>
-      <td><p>The number of standard errors for the upper and lower bounds.</p></td>
+      <th>data_file</th>
+      <td><p>The filename of a code containing R code..</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A dataframe summarizing the sensitivity of the model posterior means
-to the hyperparameters.  The reported standard errors are based on a
-multivariate normal and delta method approximation which may not be
-accurate for highly variable or non-normal draws. The standard errors should
-be interpreted with caution.</p><ul>
-<li><p>hyperparameter: The name of the hyperparameter.</p></li>
-<li><p>parameter: The name of the parameter.</p></li>
-<li><p>sensitivity:
-    The MCMC estimate of <code>dE[parameter | X, hyperparameter] /  d hyperparameter</code>.</p></li>
-<li><p>sensitivity_se: 
-    The estimated Monte Carlo error of <code>sensitivity</code>.</p></li>
-<li><p>normalized_sensitivity: 
-    The MCMC estimate of <code>sensitivity / sd(parameter</code>).</p></li>
-<li><p>normalized_sensitivity_se: 
-    The estimated Monte Carlo error of <code>normalized_sensitivity</code>.</p></li>
-</ul>
-
+    <p>A list with the variables defined when running `data_file`.</p>
     
 
   </div>

@@ -1,14 +1,14 @@
-
-  data {
+data {
     real y;
-  }
-  hyperparameters {
+  
+  // Hyperparameters:
   real prior_mean;
   }
-  parameters {
+parameters {
   real mu;
   }
-  model {
+model {
   mu ~ normal(prior_mean, 1.0);
   y ~ normal(mu, 1.0);
   }
+

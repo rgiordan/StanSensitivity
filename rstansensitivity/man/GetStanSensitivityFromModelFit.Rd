@@ -16,7 +16,7 @@ GetStanSensitivityFromModelFit(sampling_result, stan_sensitivity_list)
 A list of matrices.  The elements of the list are
 \itemize{
     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
-    \item{sens_mat_normalized: }{The same quantities as \code{sens_mat}, but normalized by the posterior standard deviation.}
+    \item{sens_mat_normalized: }{\code{sens_mat}, but normalized by the posterior standard deviation.}
     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
     \item{lp_vec: }{The log probability of the model at each draw.}
     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.

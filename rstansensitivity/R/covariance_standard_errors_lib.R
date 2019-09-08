@@ -1,3 +1,5 @@
+# Utilities using `mcmcse` to evaluate standard errors for correlations.
+
 library(mcmcse)
 
 
@@ -30,6 +32,7 @@ PackNormalizedCovariancePar <- function(x_draws, y_draws) {
 }
 
 GetNormalizedCovarianceGradient <- function(par) {
+  # We use this to apply the delta method to normalizes sensitivities.
   mean_xy <- par[1]
   mean_x2 <- par[2]
   mean_x <- par[3]

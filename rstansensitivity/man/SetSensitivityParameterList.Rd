@@ -12,15 +12,16 @@ SetSensitivityParameterList(model_sens_params, model_params, stan_data)
 parameters.  In order to guarantee legal initial values, it may be
 preferable to use an empty model block.}
 
+\item{model_params}{A stanfit object for the original model.}
+
 \item{stan_data}{The stan data list for the original model with
 hyperparameters specified for reading in the data block.  Each hyperparameter
-in the model_sens_params stanfit model must be specified in \code{stan_data}.}
-
-\item{model_sens_params}{A stanfit object for the original model.}
+in the \code{model_sens_params} stanfit model must be specified in
+\code{stan_data}.}
 }
 \value{
 A list of valid model parameters than can be passed to the
-sensivitiy model, in which the sampled parameters are taken from
+sensivity model, in which the sampled parameters are taken from
 \code{model_params} and the hyperparameters are taken from \code{stan_data}.
 }
 \description{

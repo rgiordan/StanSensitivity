@@ -1,20 +1,33 @@
-library(ggplot2)
-library(dplyr)
-library(reshape2)
+
+CheckDimensions <- function(grad_mat, draws_mat) {
+    if (ncol(grad_mat) != nrow(draws_mat)) {
+        stop(paste0(
+            "The dimensions of `grad_mat` must be ",
+            "# hyper parameters x # MCMC draws, and the dimensions ",
+            "of draws_mat must be # draws x # parameters."))
+    }
+}
 
 
+#' Get a sensitivity matrix from a matrix of partial derivatives and
+#' a matrix of draws.
+#' @param grad_mat A matrix of gradients of the log probability with respect
+#'   to hyperparameters.  The rows are hyperparameters, and the columns are
+#'   draws.
+#' @param draws_mat A matrix of draws of parameters, the means of which
+#'   are the quantities of interest.  The rows are draws, and the columns
+#'   are parameters.
+#' @return A matrix of estimated derivatives, dE[parameter | hyper] / dhyper.
+#'   The rows are hyperparameters and the columns are parameters.
+#' @export
 GetSensitivityFromGrads <- function(grad_mat, draws_mat) {
   # This should in fact match cov() but without having to transpose,
   # which gives a speedup.
 
   # Should match:
   # sens_mat <- cov(t(grad_mat), draws_mat)
-  if (ncol(grad_mat) != nrow(draws_mat)) {
-      stop(paste0(
-          "The dimensions of `grad_mat` must be ",
-          "# hyper parameters x # MCMC draws, and the dimensions ",
-          "of draws_mat must be # draws x # parameters."))
-  }
+
+  CheckDimensions(grad_mat, draws_mat)
 
   grad_means <- rowMeans(grad_mat)
   draw_means <- colMeans(draws_mat)

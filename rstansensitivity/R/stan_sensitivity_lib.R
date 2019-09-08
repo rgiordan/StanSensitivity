@@ -1,6 +1,7 @@
+# Tools for getting `grad_mat` (the matrix of partial derivatives
+# of the log posterior with respect to the hyperparameters) out of Stan.
+
 library(rstan)
-library(dplyr)
-library(reshape2)
 
 
 # Just a more readable shortcut for the Stan attribute.
@@ -17,10 +18,7 @@ GetParamNames <- function(model_fit) {
 #'
 #' @return The full path of the generated file to be used for sampling.
 #' @export
-#' @examples
-#' model_name <- GenerateSensitivityFromModel("models/my_model.stan")
-#' model <- stan_model(GetSamplingModelFilename(model_name))
-#' sampling_result <- sampling(model, data=stan_data)
+#' @example inst/examples/GenerateSensitivityFromModel.R
 GetSamplingModelFilename <- function(model_name) {
     return(paste(model_name, "_generated.stan", sep=""))
 }
@@ -36,15 +34,16 @@ GetSamplingModelFilename <- function(model_name) {
 #' functions in this library.  The function also generates the sensitivity model
 #' files in the same location as the original base model.
 #' @export
-#' @examples
-#' GenerateSensitivityFromModel("models/my_model.stan")
+#' @example inst/examples/GenerateSensitivityFromModel.R
 GenerateSensitivityFromModel <- function(
         base_model_name,
         python_script=system.file("generate_models.py",
                                   package="rstansensitivity")) {
 
     model_suffix <-
-        substr(base_model_name, nchar(base_model_name) - 4, nchar(base_model_name))
+        substr(base_model_name,
+               nchar(base_model_name) - 4,
+               nchar(base_model_name))
     stopifnot(model_suffix == ".stan")
     system(paste("python ", python_script,
                  " --base_model=", base_model_name, sep=""))
@@ -119,9 +118,10 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
     # This is the stan fit object that we will use to evaluate the gradient
     # of the log probability at the MCMC draws.
-    model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
-                           data=stan_data, algorithm="Fixed_param",
-                           iter=1, chains=1, init=list(sens_par_list))
+    model_sens_fit <- rstan::stan(
+        paste(model_name, "_sensitivity.stan", sep=""),
+        data=stan_data, algorithm="Fixed_param",
+        iter=1, chains=1, init=list(sens_par_list))
 
     # These names help sort through the vectors of sensitivity.
     param_names <- GetParamNames(model_params)
@@ -165,7 +165,7 @@ EvaluateModelAtDraws <- function(
 
   # Check that every parameter in the sampling results is also in the model
   # parameter list.
-  par_list_check <- get_inits(sampling_result, iter=1)[[1]]
+  par_list_check <- rstan::get_inits(sampling_result, iter=1)[[1]]
   missing_pars <- setdiff(names(par_list_check), names(model_par_list))
   if (length(missing_pars) > 0) {
       stop(sprintf(
@@ -197,7 +197,7 @@ EvaluateModelAtDraws <- function(
         for (par in ls(par_list)) {
           model_par_list[[par]] <- par_list[[par]]
         }
-        pars_free <- unconstrain_pars(model_fit, model_par_list)
+        pars_free <- rstan::unconstrain_pars(model_fit, model_par_list)
 
         # The index in the matrix stacked by chain.
         # This needs to match the stacking done to the Stan samples in
@@ -206,11 +206,11 @@ EvaluateModelAtDraws <- function(
         # put them into compatible shapes...
         ix <- (chain - 1) * num_samples + n
         if (compute_grads) {
-          glp <- grad_log_prob(model_fit, pars_free)
+          glp <- rstan::grad_log_prob(model_fit, pars_free)
           grad_mat[, ix] <- glp
           lp_vec[ix] <- attr(glp, "log_prob")
         } else {
-          lp_vec[ix] <- log_prob(model_fit, pars_free)
+          lp_vec[ix] <- rstan::log_prob(model_fit, pars_free)
         }
       }
       close(prog_bar)
@@ -240,12 +240,12 @@ CheckModelEquivalence <- function(
     check_grads=TRUE,
     tol=1e-8, max_chains=1, max_num_samples=100) {
 
-    model_fit_1 <- sampling(
+    model_fit_1 <- rstan::sampling(
         object=model_1, data=stan_data_1,
         algorithm="Fixed_param", iter=1, chains=1)
     model_par_list_1 <- get_inits(model_fit_1, 1)[[1]]
 
-    model_fit_2 <- sampling(
+    model_fit_2 <- rstan::sampling(
         object=model_2, data=stan_data_2,
         algorithm="Fixed_param", iter=1, chains=1)
     model_par_list_2 <- get_inits(model_fit_2, 1)[[1]]
@@ -406,7 +406,7 @@ GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
   sens_par_list <- SetSensitivityParameterList(
     stan_sensitivity_list$model_sens_params,
     stan_sensitivity_list$model_params, stan_data)
-  pars_free <- unconstrain_pars(
+  pars_free <- rstan::unconstrain_pars(
       stan_sensitivity_list$model_sens_fit, sens_par_list)
   names(pars_free) <- stan_sensitivity_list$sens_param_names
   hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,

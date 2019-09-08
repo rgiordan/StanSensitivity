@@ -2,6 +2,22 @@
 #
 # TODO: move most of this over to tidybayes
 
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+
+
+#' Execute an R file and store its environment variables in a list.
+#' @param data_file The filename of a code containing R code..
+#' @return A list with the variables defined when running `data_file`.
+#' @export
+LoadStanData <- function(data_file) {
+  stan_data <- new.env()
+  source(data_file, local=stan_data)
+  stan_data <- as.list(stan_data)
+  return(stan_data)
+}
+
 SensitivityMatrixToDataframe <- function(
     sens_mat, hyperparameter_names, parameter_names) {
   colnames(sens_mat) <- parameter_names
@@ -13,7 +29,7 @@ SensitivityMatrixToDataframe <- function(
 
 
 #' Make a tidy dataframe out of a sensitivity matrix and its standard errors.
-#' @param sens_mat A matrix of sensitivities.
+#' @param sens_mat A matrix of sensitivities.  Hyperparameters should be in the rows and parameters in the columns.
 #' @param sens_se A matrix of standard errors of \code{sens_mat}.
 #' @param measure What to call these sensitivites.
 #' @param num_se The number of standard errors for the upper and lower bounds.
@@ -183,7 +199,7 @@ PredictSensitivityFromStanData <- function(
 
 
 # Get a tidy version of a Stan summary with tidybayes.
-# An actual tidybayes function.
+# An actual (proof of concept) tidybayes function.
 GetTidySummary <- function(stanfit, ..., spread=FALSE) {
   pars <- enquos(...)
   summary_mat <- t(rstan::summary(stanfit)$summary)

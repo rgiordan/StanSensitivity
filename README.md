@@ -223,6 +223,35 @@ In the figure "Negative binomial example" above, suppose we had decided that `ca
 
 For a more in-depth discussion of the relationship between sensitivity and robustness, see Appendix C of our paper [3].
 
+# Development
+
+The following commands are to be run from the root of a clone of the
+repository.
+
+To install a local version, in `R`, run
+
+```
+> library(devtools)
+> install_local("rstansensitivity", force=TRUE)
+```
+
+To run the unit tests, execute the following in your shell:
+
+```
+$ cd rstansensitivity/tests
+$ ./run_tests.R
+```
+
+To build the documentation (and exports), run the following commands in `R` from
+the `rstansensitivity` directory:
+
+```
+> library(roxygen2)
+> library(pkgdown)
+> roxygen2::roxygenize()
+> pkgdown::build_site()
+```
+
 # References
 
 [1]: Local posterior robustness with parametric priors: Maximum and average sensitivity, Basu, Jammalamadaka, Rao, Liu (1996)

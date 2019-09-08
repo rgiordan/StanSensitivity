@@ -19,7 +19,16 @@ The full path of the generated file to be used for sampling.
 Get the filename of the stan model to be used for sampling.
 }
 \examples{
-model_name <- GenerateSensitivityFromModel("models/my_model.stan")
+library(devtools)
+library(rstan)
+rstan_options(auto_write=TRUE)
+
+model_filename <- package_file("inst/examples/my_model.stan")
+stan_data_filename <- package_file("inst/examples/my_model.data.R")
+
+model_name <- GenerateSensitivityFromModel(model_filename)
 model <- stan_model(GetSamplingModelFilename(model_name))
-sampling_result <- sampling(model, data=stan_data)
+
+stan_data <- LoadStanData(stan_data_filename)
+sampling_result <- sampling(model, data=stan_data, chains=1, draws=1000)
 }
