@@ -137,67 +137,94 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
 
 #' Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-#' from a different model.
+#' from a different model.  The model \code{model_stanfit} is evaluated
+#' at the draws found in \code{samples_stanfit}.  If there are parameters in
+#' \code{model_stanfit} that are not contained in \code{samples_stanfit},
+#' values from \code{model_par_list} are used.
 #'
-#' @param sampling_result The output of Stan sampling (e.g. rstan::sampling())
-#' @param model_fit A stanfit object from a model, possibly containing a
-#' superset of the parameters in sampling_result.
-#' @param A list of parameters for model_fit which can be passed to
-#' \code{unconstrain_pars} for the \code{model_fit} model.  Every parameter
-#' in \code{get_inits} applied to \code{sampling_result} must be also be found
+#' This was designed to evaluate gradients with respect to hyperparameters
+#' which are Stan parameters in \code{model_stanfit} but not in
+#' \code{samples_stanfit}.  The values of those hyperparameters would be
+#' specified in \code{model_par_list} and reused for each evaluation of
+#' \code{model_stanfit}.  Since this is the intended use case, the function
+#' requires that \code{model_stanfit} contains a (non-strict) superset of the
+#' parameters in \code{samples_stanfit}.
+#'
+#' @param samples_stanfit (sampling_result) The output of Stan sampling
+#' containing the draws at which you want to evaluate the model.
+#' (e.g. \code{rstan::sampling()})
+#' @param model_stanfit (model_fit) A stanfit object from a model, possibly containing a
+#' superset of the parameters in samples_stanfit.
+#' @param model_par_list A list of parameters for model_stanfit which can be
+#' passed to
+#' \code{unconstrain_pars} for the \code{model_stanfit} model.  Every parameter
+#' in \code{get_inits} applied to \code{samples_stanfit} must be also be found
 #' in \code{model_par_list}.
 #' @param compute_grads If FALSE, only return the log probability.
+#' @param max_chains How many chains to evaluate.  The default is to
+#' evaluate the number of chains in \code{samples_stanfit}.
+#' @param max_num_samples How many samples to evaluate.  The default is to
+#' evaluate the number of non-warmup samples in \code{samples_stanfit}.
+#' @param verbose If true, display progress messages.
 #' @return
 #' A list with \code{lp_vec} containing a vector of log probabilities and,
 #' if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
-#' all with resepct to the parameters in \code{model_fit} at the draws in
-#' \code{sampling_result}.  If the sampler contains multiple chains the
+#' all with resepct to the parameters in \code{model_stanfit} at the draws in
+#' \code{samples_stanfit}.  If the sampler contains multiple chains the
 #' chains are concatenated in order.
 #' @export
 EvaluateModelAtDraws <- function(
-    sampling_result, model_fit, model_par_list,
-    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf) {
+    samples_stanfit, model_stanfit, model_par_list,
+    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf,
+    verbose=TRUE) {
 
-  num_warmup_samples <- sampling_result@sim$warmup
-  num_samples <- min(sampling_result@sim$iter - num_warmup_samples,
+  num_warmup_samples <- samples_stanfit@sim$warmup
+  num_samples <- min(samples_stanfit@sim$iter - num_warmup_samples,
                      max_num_samples)
-  num_chains <- min(sampling_result@sim$chains, max_chains)
+  num_chains <- min(samples_stanfit@sim$chains, max_chains)
 
-  # Check that every parameter in the sampling results is also in the model
-  # parameter list.
-  par_list_check <- rstan::get_inits(sampling_result, iter=1)[[1]]
-  missing_pars <- setdiff(names(par_list_check), names(model_par_list))
+  # Check that every parameter in the samples_stanfit is also in model_stanfit.
+  samples_stanfit_pars <- rstan::get_inits(samples_stanfit, iter=1)[[1]]
+  missing_pars <- setdiff(names(samples_stanfit_pars), names(model_par_list))
   if (length(missing_pars) > 0) {
-      stop(sprintf(
-          "Parameters from sampling result not in new model: %s",
-          paste(missing_pars, collapse=", ")))
+      err_msg <- paste0(
+          "Every parameter in `samples_stanfit` must also be found in ",
+          "`model_stanfit`.  ",
+          sprintf(
+              "Parameters from sampling result not in new model: %s",
+              paste(missing_pars, collapse=", ")))
+      stop(err_msg)
   }
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    param_names <- GetParamNames(model_fit)
-    grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
+    param_names <- GetParamNames(model_stanfit)
+    grad_mat <- matrix(
+        NA, nrow=length(param_names), ncol=num_samples * num_chains)
     rownames(grad_mat) <- param_names
   } else {
     grad_mat <- matrix()
   }
 
   for (chain in 1:num_chains) {
-      cat("Evaluating model at the MCMC draws for chain ",
-          chain, ".\n")
-      prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+      if (verbose) {
+          cat("Evaluating model at the MCMC draws for chain ", chain, ".\n")
+          prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+      }
       for (n in 1:num_samples) {
-        setTxtProgressBar(prog_bar, value=n)
+         if (verbose) {
+             setTxtProgressBar(prog_bar, value=n)
+         }
 
         # We rely on get_inits to return the draws at iteration n in a form
         # that is easy to parse.
         par_list <- get_inits(
-            sampling_result, iter=n + num_warmup_samples)[[chain]]
+            samples_stanfit, iter=n + num_warmup_samples)[[chain]]
         for (par in ls(par_list)) {
           model_par_list[[par]] <- par_list[[par]]
         }
-        pars_free <- rstan::unconstrain_pars(model_fit, model_par_list)
+        pars_free <- rstan::unconstrain_pars(model_stanfit, model_par_list)
 
         # The index in the matrix stacked by chain.
         # This needs to match the stacking done to the Stan samples in
@@ -206,14 +233,16 @@ EvaluateModelAtDraws <- function(
         # put them into compatible shapes...
         ix <- (chain - 1) * num_samples + n
         if (compute_grads) {
-          glp <- rstan::grad_log_prob(model_fit, pars_free)
+          glp <- rstan::grad_log_prob(model_stanfit, pars_free)
           grad_mat[, ix] <- glp
           lp_vec[ix] <- attr(glp, "log_prob")
         } else {
-          lp_vec[ix] <- rstan::log_prob(model_fit, pars_free)
+          lp_vec[ix] <- rstan::log_prob(model_stanfit, pars_free)
         }
       }
-      close(prog_bar)
+      if (verbose) {
+          close(prog_bar)
+      }
   }
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
 }

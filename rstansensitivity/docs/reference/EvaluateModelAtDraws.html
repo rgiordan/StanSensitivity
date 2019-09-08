@@ -7,7 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model. — EvaluateModelAtDraws • rstansensitivity</title>
+from a different model.  The model <code>model_stanfit</code> is evaluated
+at the draws found in <code>samples_stanfit</code>.  If there are parameters in
+<code>model_stanfit</code> that are not contained in <code>samples_stanfit</code>,
+values from <code>model_par_list</code> are used. — EvaluateModelAtDraws • rstansensitivity</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -34,10 +37,18 @@ from a different model. — EvaluateModelAtDraws • rstansensitivity</title>
 
 
 <meta property="og:title" content="Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model. — EvaluateModelAtDraws" />
+from a different model.  The model <code>model_stanfit</code> is evaluated
+at the draws found in <code>samples_stanfit</code>.  If there are parameters in
+<code>model_stanfit</code> that are not contained in <code>samples_stanfit</code>,
+values from <code>model_par_list</code> are used. — EvaluateModelAtDraws" />
 
-<meta property="og:description" content="Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model." />
+<meta property="og:description" content="This was designed to evaluate gradients with respect to hyperparameters
+which are Stan parameters in model_stanfit but not in
+samples_stanfit.  The values of those hyperparameters would be
+specified in model_par_list and reused for each evaluation of
+model_stanfit.  Since this is the intended use case, the function
+requires that model_stanfit contains a (non-strict) superset of the
+parameters in samples_stanfit." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -102,43 +113,69 @@ from a different model." />
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model.</h1>
+from a different model.  The model <code>model_stanfit</code> is evaluated
+at the draws found in <code>samples_stanfit</code>.  If there are parameters in
+<code>model_stanfit</code> that are not contained in <code>samples_stanfit</code>,
+values from <code>model_par_list</code> are used.</h1>
     
     <div class="hidden name"><code>EvaluateModelAtDraws.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model.</p>
+    <p>This was designed to evaluate gradients with respect to hyperparameters
+which are Stan parameters in <code>model_stanfit</code> but not in
+<code>samples_stanfit</code>.  The values of those hyperparameters would be
+specified in <code>model_par_list</code> and reused for each evaluation of
+<code>model_stanfit</code>.  Since this is the intended use case, the function
+requires that <code>model_stanfit</code> contains a (non-strict) superset of the
+parameters in <code>samples_stanfit</code>.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>EvaluateModelAtDraws</span>(<span class='no'>sampling_result</span>, <span class='no'>model_fit</span>, <span class='no'>model_par_list</span>,
-  <span class='kw'>compute_grads</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max_chains</span> <span class='kw'>=</span> <span class='fl'>Inf</span>, <span class='kw'>max_num_samples</span> <span class='kw'>=</span> <span class='fl'>Inf</span>)</pre>
+    <pre class="usage"><span class='fu'>EvaluateModelAtDraws</span>(<span class='no'>samples_stanfit</span>, <span class='no'>model_stanfit</span>, <span class='no'>model_par_list</span>,
+  <span class='kw'>compute_grads</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max_chains</span> <span class='kw'>=</span> <span class='fl'>Inf</span>, <span class='kw'>max_num_samples</span> <span class='kw'>=</span> <span class='fl'>Inf</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>sampling_result</th>
-      <td><p>The output of Stan sampling (e.g. rstan::sampling())</p></td>
+      <th>samples_stanfit</th>
+      <td><p>(sampling_result) The output of Stan sampling
+containing the draws at which you want to evaluate the model.
+(e.g. <code><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-sampling.html'>rstan::sampling()</a></code>)</p></td>
     </tr>
     <tr>
-      <th>model_fit</th>
-      <td><p>A stanfit object from a model, possibly containing a
-superset of the parameters in sampling_result.</p></td>
+      <th>model_stanfit</th>
+      <td><p>(model_fit) A stanfit object from a model, possibly containing a
+superset of the parameters in samples_stanfit.</p></td>
+    </tr>
+    <tr>
+      <th>model_par_list</th>
+      <td><p>A list of parameters for model_stanfit which can be
+passed to
+<code>unconstrain_pars</code> for the <code>model_stanfit</code> model.  Every parameter
+in <code>get_inits</code> applied to <code>samples_stanfit</code> must be also be found
+in <code>model_par_list</code>.</p></td>
     </tr>
     <tr>
       <th>compute_grads</th>
       <td><p>If FALSE, only return the log probability.</p></td>
     </tr>
     <tr>
-      <th>A</th>
-      <td><p>list of parameters for model_fit which can be passed to
-<code>unconstrain_pars</code> for the <code>model_fit</code> model.  Every parameter
-in <code>get_inits</code> applied to <code>sampling_result</code> must be also be found
-in <code>model_par_list</code>.</p></td>
+      <th>max_chains</th>
+      <td><p>How many chains to evaluate.  The default is to
+evaluate the number of chains in <code>samples_stanfit</code>.</p></td>
+    </tr>
+    <tr>
+      <th>max_num_samples</th>
+      <td><p>How many samples to evaluate.  The default is to
+evaluate the number of non-warmup samples in <code>samples_stanfit</code>.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>If true, display progress messages.</p></td>
     </tr>
     </table>
     
@@ -146,8 +183,8 @@ in <code>model_par_list</code>.</p></td>
 
     <p>A list with <code>lp_vec</code> containing a vector of log probabilities and,
 if <code>compute_grads</code> is <code>TRUE</code>, gradients of the log probability,
-all with resepct to the parameters in <code>model_fit</code> at the draws in
-<code>sampling_result</code>.  If the sampler contains multiple chains the
+all with resepct to the parameters in <code>model_stanfit</code> at the draws in
+<code>samples_stanfit</code>.  If the sampler contains multiple chains the
 chains are concatenated in order.</p>
     
 

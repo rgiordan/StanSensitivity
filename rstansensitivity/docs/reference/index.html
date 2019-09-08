@@ -126,7 +126,10 @@
           <p><code><a href="EvaluateModelAtDraws.html">EvaluateModelAtDraws()</a></code> </p>
         </td>
         <td><p>Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model.</p></td>
+from a different model.  The model <code>model_stanfit</code> is evaluated
+at the draws found in <code>samples_stanfit</code>.  If there are parameters in
+<code>model_stanfit</code> that are not contained in <code>samples_stanfit</code>,
+values from <code>model_par_list</code> are used.</p></td>
       </tr><tr>
         
         <td>
