@@ -141,114 +141,17 @@ files in the same location as the original base model.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>devtools</span>)</div><div class='output co'>#&gt; <span class='message'>Loading required package: usethis</span></div><div class='input'>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>devtools</span>)</div><div class='output co'>#&gt; <span class='message'>Loading required package: usethis</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>rstan</span>)
+<span class='fu'><a href='https://rdrr.io/pkg/rstan/man/rstan_options.html'>rstan_options</a></span>(<span class='kw'>auto_write</span><span class='kw'>=</span><span class='fl'>TRUE</span>)
+
 <span class='no'>model_filename</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/devtools/man/package_file.html'>package_file</a></span>(<span class='st'>"inst/examples/my_model.stan"</span>)
 <span class='no'>stan_data_filename</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/devtools/man/package_file.html'>package_file</a></span>(<span class='st'>"inst/examples/my_model.data.R"</span>)
 
 <span class='no'>model_name</span> <span class='kw'>&lt;-</span> <span class='fu'>GenerateSensitivityFromModel</span>(<span class='no'>model_filename</span>)
-<span class='no'>model</span> <span class='kw'>&lt;-</span> <span class='fu'>stan_model</span>(<span class='fu'><a href='GetSamplingModelFilename.html'>GetSamplingModelFilename</a></span>(<span class='no'>model_name</span>))
+<span class='no'>model</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stan_model.html'>stan_model</a></span>(<span class='fu'><a href='GetSamplingModelFilename.html'>GetSamplingModelFilename</a></span>(<span class='no'>model_name</span>))
 
 <span class='no'>stan_data</span> <span class='kw'>&lt;-</span> <span class='fu'>LoadStanData</span>(<span class='no'>stan_data_filename</span>)
-<span class='no'>sampling_result</span> <span class='kw'>&lt;-</span> <span class='fu'>sampling</span>(<span class='no'>model</span>, <span class='kw'>data</span><span class='kw'>=</span><span class='no'>stan_data</span>)</div><div class='output co'>#&gt; 
-#&gt; SAMPLING FOR MODEL 'my_model_generated' NOW (CHAIN 1).
-#&gt; Chain 1: 
-#&gt; Chain 1: Gradient evaluation took 4e-06 seconds
-#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
-#&gt; Chain 1: Adjust your expectations accordingly!
-#&gt; Chain 1: 
-#&gt; Chain 1: 
-#&gt; Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
-#&gt; Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#&gt; Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#&gt; Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#&gt; Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#&gt; Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#&gt; Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#&gt; Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#&gt; Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#&gt; Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#&gt; Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#&gt; Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
-#&gt; Chain 1: 
-#&gt; Chain 1:  Elapsed Time: 0.006507 seconds (Warm-up)
-#&gt; Chain 1:                0.005774 seconds (Sampling)
-#&gt; Chain 1:                0.012281 seconds (Total)
-#&gt; Chain 1: 
-#&gt; 
-#&gt; SAMPLING FOR MODEL 'my_model_generated' NOW (CHAIN 2).
-#&gt; Chain 2: 
-#&gt; Chain 2: Gradient evaluation took 2e-06 seconds
-#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
-#&gt; Chain 2: Adjust your expectations accordingly!
-#&gt; Chain 2: 
-#&gt; Chain 2: 
-#&gt; Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
-#&gt; Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#&gt; Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#&gt; Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#&gt; Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#&gt; Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#&gt; Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#&gt; Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#&gt; Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#&gt; Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#&gt; Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#&gt; Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
-#&gt; Chain 2: 
-#&gt; Chain 2:  Elapsed Time: 0.006001 seconds (Warm-up)
-#&gt; Chain 2:                0.006575 seconds (Sampling)
-#&gt; Chain 2:                0.012576 seconds (Total)
-#&gt; Chain 2: 
-#&gt; 
-#&gt; SAMPLING FOR MODEL 'my_model_generated' NOW (CHAIN 3).
-#&gt; Chain 3: 
-#&gt; Chain 3: Gradient evaluation took 1e-06 seconds
-#&gt; Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.01 seconds.
-#&gt; Chain 3: Adjust your expectations accordingly!
-#&gt; Chain 3: 
-#&gt; Chain 3: 
-#&gt; Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
-#&gt; Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#&gt; Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#&gt; Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#&gt; Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#&gt; Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#&gt; Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#&gt; Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#&gt; Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#&gt; Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#&gt; Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#&gt; Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
-#&gt; Chain 3: 
-#&gt; Chain 3:  Elapsed Time: 0.006604 seconds (Warm-up)
-#&gt; Chain 3:                0.005971 seconds (Sampling)
-#&gt; Chain 3:                0.012575 seconds (Total)
-#&gt; Chain 3: 
-#&gt; 
-#&gt; SAMPLING FOR MODEL 'my_model_generated' NOW (CHAIN 4).
-#&gt; Chain 4: 
-#&gt; Chain 4: Gradient evaluation took 1e-06 seconds
-#&gt; Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.01 seconds.
-#&gt; Chain 4: Adjust your expectations accordingly!
-#&gt; Chain 4: 
-#&gt; Chain 4: 
-#&gt; Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
-#&gt; Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#&gt; Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#&gt; Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#&gt; Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#&gt; Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#&gt; Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#&gt; Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#&gt; Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#&gt; Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#&gt; Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#&gt; Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
-#&gt; Chain 4: 
-#&gt; Chain 4:  Elapsed Time: 0.006072 seconds (Warm-up)
-#&gt; Chain 4:                0.006447 seconds (Sampling)
-#&gt; Chain 4:                0.012519 seconds (Total)
-#&gt; Chain 4: </div></pre>
+<span class='no'>sampling_result</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/rstan/man/stanmodel-method-sampling.html'>sampling</a></span>(<span class='no'>model</span>, <span class='kw'>data</span><span class='kw'>=</span><span class='no'>stan_data</span>, <span class='kw'>chains</span><span class='kw'>=</span><span class='fl'>1</span>, <span class='kw'>draws</span><span class='kw'>=</span><span class='fl'>1000</span>)</div><div class='output co'>#&gt; <span class='error'>Error: passing unknown arguments: draws.</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

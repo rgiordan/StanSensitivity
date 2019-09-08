@@ -235,11 +235,17 @@ To install a local version, in `R`, run
 > install_local("rstansensitivity", force=TRUE)
 ```
 
-To run the unit tests, execute the following in your shell:
+To run the R unit tests, execute the following in your shell:
 
 ```
 $ cd rstansensitivity/tests
 $ ./run_tests.R
+```
+
+To run the python tests, execute the following in your shell:
+
+```
+$ rstansensitivity/inst/generate_models_unittest.py
 ```
 
 To build the documentation (and exports), run the following commands in `R` from
