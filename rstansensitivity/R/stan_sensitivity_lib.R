@@ -59,12 +59,13 @@ GenerateSensitivityFromModel <- function(
 #' @param model_sens_params A stanfit object with the sensitivity model
 #' parameters.  In order to guarantee legal initial values, it may be
 #' preferable to use an empty model block.
-#' @param model_sens_params A stanfit object for the original model.
+#' @param model_params A stanfit object for the original model.
 #' @param stan_data The stan data list for the original model with
 #' hyperparameters specified for reading in the data block.  Each hyperparameter
-#' in the model_sens_params stanfit model must be specified in \code{stan_data}.
+#' in the \code{model_sens_params} stanfit model must be specified in
+#' \code{stan_data}.
 #' @return A list of valid model parameters than can be passed to the
-#' sensivitiy model, in which the sampled parameters are taken from
+#' sensivity model, in which the sampled parameters are taken from
 #' \code{model_params} and the hyperparameters are taken from \code{stan_data}.
 #' @export
 SetSensitivityParameterList <- function(
@@ -328,7 +329,7 @@ StackChainArray <- function(draws_array) {
 #' @return A list of matrices.  The elements of the list are
 #' \itemize{
 #'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
-#'     \item{sens_mat_normalized: }{The same quantities as \code{sens_mat}, but normalized by the posterior standard deviation.}
+#'     \item{sens_mat_normalized: }{\code{sens_mat}, but normalized by the posterior standard deviation.}
 #'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
 #'     \item{lp_vec: }{The log probability of the model at each draw.}
 #'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
