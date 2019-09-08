@@ -2,6 +2,7 @@ library(tidybayes)
 library(dplyr)
 
 
+#' @export
 GetWeightMatrixSecondDerivative <- function(stanfit, log_lik_name="log_lik") {
   log_lik <- t(as.matrix(stanfit, log_lik_name))
   log_lik <- log_lik - rowMeans(log_lik)
@@ -41,11 +42,11 @@ GetWeightMatrixPredictor <- function(stanfit, log_lik_name="log_lik") {
 }
 
 
-CleanGather <- function(mat, ...) {
-  pars <- enquos(...)
-  gather_draws(mat, !!!pars) %>%
-    select(-.chain, -.iteration, -.draw)
-}
+# CleanGather <- function(mat, ...) {
+#   pars <- enquos(...)
+#   gather_draws(mat, !!!pars) %>%
+#     select(-.chain, -.iteration, -.draw)
+# }
 
 
 GetTidyWeightPredictor <- function(...,
@@ -70,7 +71,8 @@ GetTidyWeightPredictor <- function(...,
         draws <- as.matrix(stanfit, par_names)
     }
     par_means <-
-        CleanGather(t(colMeans(draws)), !!!pars) %>%
+        gather_draws(t(colMeans(draws)), !!!pars) %>%
+        RemoveExtraTidyColumns() %>%
         rename(base_mean=.value)
     join_vars <- setdiff(names(par_means), "base_mean")
 
@@ -78,8 +80,9 @@ GetTidyWeightPredictor <- function(...,
         pred_mat <- PredictDiff(w=w, draws=draws, base_w=base_w)
         pred_df <-
           inner_join(
-            CleanGather(pred_mat, !!!pars) %>%
-              rename(pred_diff=.value),
+            gather_draws(pred_mat, !!!pars) %>%
+              rename(pred_diff=.value) %>%
+              RemoveExtraTidyColumns(),
             par_means,
             by=join_vars) %>%
           mutate(pred_mean=base_mean + pred_diff)

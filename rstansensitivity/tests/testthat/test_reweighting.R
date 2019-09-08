@@ -51,7 +51,7 @@ test_that("exact_derivatives_correct", {
     }
 
     mu_derivs <- GetMuDerivs(stan_data)
-    tidy_summary <- GetTidySummary(stanfit, mu, spread=TRUE)
+    tidy_summary <- GetTidyStanSummary(stanfit, mu, spread=TRUE)
     stopifnot(abs(tidy_summary$mean - mu_derivs$muhat) /
               tidy_summary$se_mean < 2.5)
     Derivative <- GetWeightMatrixDerivative(stanfit)
@@ -134,8 +134,8 @@ test_that("multiple_parameters_work", {
       GetPredDf()
 
 
-    tidy_summary <- GetTidySummary(stanfit, mu[i], log_sigma, spread=TRUE)
-    tidy_summary_w <- GetTidySummary(stanfit_w, mu[i], log_sigma, spread=TRUE)
+    tidy_summary <- GetTidyStanSummary(stanfit, mu[i], log_sigma, spread=TRUE)
+    tidy_summary_w <- GetTidyStanSummary(stanfit_w, mu[i], log_sigma, spread=TRUE)
     pred_df1 %>%
       inner_join(
         select(tidy_summary, i, .variable, se_mean),

@@ -7,6 +7,30 @@ library(dplyr)
 library(reshape2)
 
 
+#' Get a dataframe with the hyperparameter values contained in a stan data list.
+#'
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @param stan_data The Stan data for the original model.
+#' @return A tidy dataframe with the hyperparameter names and values.
+#' @export
+GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
+  sens_par_list <- SetSensitivityParameterList(
+    stan_sensitivity_list$model_sens_params,
+    stan_sensitivity_list$model_params,
+    stan_data)
+  pars_free <- rstan::unconstrain_pars(
+      stan_sensitivity_list$model_sens_fit, sens_par_list)
+  names(pars_free) <- stan_sensitivity_list$sens_param_names
+  hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,
+                              stan_sensitivity_list$param_names)
+  hyperparameter_df <-
+    data.frame(hyperparameter=hyperparam_names,
+               hyperparameter_val=pars_free[hyperparam_names])
+  rownames(hyperparameter_df) <- NULL
+  return(hyperparameter_df)
+}
+
+
 #' Execute an R file and store its environment variables in a list.
 #' @param data_file The filename of a code containing R code..
 #' @return A list with the variables defined when running `data_file`.
@@ -199,8 +223,15 @@ PredictSensitivityFromStanData <- function(
 
 
 # Get a tidy version of a Stan summary with tidybayes.
-# An actual (proof of concept) tidybayes function.
-GetTidySummary <- function(stanfit, ..., spread=FALSE) {
+#
+#' @param stanfit A \code{stanfit} object (e.g., from \code{sampling}).
+#' @param ... Parameter names in the style of \code{tidybayes}.
+#' @param spread Optional.  If \code{TRUE}, return a wide dataframe in which
+#'        each summary metric is a column.  Otherwise, return a tall dataframe
+#'        in which the summary metric is in a column called \code{metric}.
+#' @return A tidy dataframe containing the \code{stan} summary object.
+#' @export
+GetTidyStanSummary <- function(stanfit, ..., spread=FALSE) {
   pars <- enquos(...)
   summary_mat <- t(rstan::summary(stanfit)$summary)
   tidy_summary <-
@@ -219,4 +250,60 @@ GetTidySummary <- function(stanfit, ..., spread=FALSE) {
         value.var=".value")
   }
   return(tidy_summary)
+}
+
+
+RemoveExtraTidyColumns <- function(df) {
+  select(df, -.chain, -.iteration, -.draw)
+}
+
+
+GatherRowNamedMatrix <- function(mat, ...) {
+    pars <- enquos(...)
+    df <-
+        tidybayes::gather_draws(mat, !!!pars) %>%
+        inner_join(data.frame(.draw=1:nrow(mat), rowname=rownames(mat)),
+            by=".draw") %>%
+        RemoveExtraTidyColumns()
+    return(df)
+}
+
+
+#' @export
+GetTidySensitivityResults <- function(grad_mat,
+                                      draws_mat,
+                                      ...,
+                                      normalize=TRUE,
+                                      calculate_se=TRUE) {
+  pars <- enquos(...)
+  GetSensitivityDf <- function(mat, measure_name) {
+    GatherRowNamedMatrix(mat, !!!pars) %>%
+      mutate(measure=measure_name) %>%
+      rename(hyperparameter=rowname)
+  }
+  sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
+  results <- GetSensitivityDf(sens_mat, "sensitivity")
+  if (calculate_se) {
+    sens_mat_se <- GetSensitivityStandardErrors(
+      draws_mat, grad_mat, normalized=FALSE)
+    results <- bind_rows(
+      results,
+      GetSensitivityDf(sens_mat_se, "sensitivity_se"))
+  }
+
+  if (normalize) {
+    # Normalize by the marginal standard deviation.
+    sens_mat_norm <- NormalizeSensitivityMatrix(sens_mat, draws_mat)
+    results <- bind_rows(
+      results,
+      GetSensitivityDf(sens_mat_norm, "normalized_sensitivity"))
+    if (calculate_se) {
+      sens_mat_norm_se <- GetSensitivityStandardErrors(
+        draws_mat, grad_mat, normalized=TRUE)
+      results <- bind_rows(
+        results,
+        GetSensitivityDf(sens_mat_norm_se, "normalized_sensitivity_se"))
+    }
+  }
+  return(results)
 }

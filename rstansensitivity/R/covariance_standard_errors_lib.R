@@ -82,6 +82,7 @@ GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
 GetSensitivityStandardErrors <- function(
     draws_mat, grad_mat, fix_mean=FALSE, normalized=FALSE) {
 
+  # TODO: fix the order of these arguments to match everything else.
   if (normalized && fix_mean) {
     stop("You cannot specify both fix_mean and normalized.")
   }

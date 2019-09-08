@@ -66,7 +66,7 @@ GenerateSensitivityFromModel <- function(
 #' @return A list of valid model parameters than can be passed to the
 #' sensivity model, in which the sampled parameters are taken from
 #' \code{model_params} and the hyperparameters are taken from \code{stan_data}.
-#' @export
+##' @export
 SetSensitivityParameterList <- function(
     model_sens_params, model_params, stan_data) {
 
@@ -172,7 +172,7 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 #' all with resepct to the parameters in \code{model_stanfit} at the draws in
 #' \code{samples_stanfit}.  If the sampler contains multiple chains the
 #' chains are concatenated in order.
-#' @export
+##' @export
 EvaluateModelAtDraws <- function(
     samples_stanfit, model_stanfit, model_par_list,
     compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf,
@@ -357,15 +357,12 @@ StackChainArray <- function(draws_array) {
 #' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
 #' @return A list of matrices.  The elements of the list are
 #' \itemize{
-#'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
-#'     \item{sens_mat_normalized: }{\code{sens_mat}, but normalized by the posterior standard deviation.}
 #'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
 #'     \item{lp_vec: }{The log probability of the model at each draw.}
 #'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
 #' }
-#' The result can be used directly, or passed to \code{GetTidyResult}.
 #' @export
-GetStanSensitivityFromModelFit <- function(
+GetStanSensitivityMatricesFromModelFit <- function(
     sampling_result, stan_sensitivity_list) {
 
     draws_mat <- StackChainArray(extract(sampling_result, permute=FALSE))
@@ -383,15 +380,43 @@ GetStanSensitivityFromModelFit <- function(
     grad_mat <- model_at_draws$grad_mat[
         setdiff(sens_param_names, param_names),, drop=FALSE]
 
+    return(list(grad_mat=grad_mat,
+                lp_vec=model_at_draws$lp_vec,
+                draws_mat=draws_mat))
+}
+
+
+#' Process the results of Stan samples and GetStanSensitivityModel into a
+#' sensitivity matrix.  Note that currently, only the first chain is supported.
+#'
+#' @param sampling_result The output of \code{stan::sampling}
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @return A list of matrices.  The elements of the list are
+#' \itemize{
+#'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
+#'     \item{sens_mat_normalized: }{\code{sens_mat}, but normalized by the posterior standard deviation.}
+#'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
+#'     \item{lp_vec: }{The log probability of the model at each draw.}
+#'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
+#' }
+#' The result can be used directly, or passed to \code{GetTidyResult}.
+#' @export
+GetStanSensitivityFromModelFit <- function(
+    sampling_result, stan_sensitivity_list) {
+
+    # TODO: deprecate this for something more general.
+    sens_mats <- GetStanSensitivityMatricesFromModelFit(
+        sampling_result, stan_sensitivity_list)
+
     # Calculate the sensitivity.
-    sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
+    sens_mats$sens_mat <- GetSensitivityFromGrads(
+        sens_mats$grad_mat, sens_mats$draws_mat)
 
     # Normalize by the marginal standard deviation.
-    sens_mat_normalized <- NormalizeSensitivityMatrix(sens_mat, draws_mat)
+    sens_mats$sens_mat_normalized <- NormalizeSensitivityMatrix(
+        sens_mats$sens_mat, sens_mats$draws_mat)
 
-    return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
-                grad_mat=grad_mat, lp_vec=model_at_draws$lp_vec,
-                draws_mat=draws_mat))
+    return(sens_mats)
 }
 
 
@@ -419,30 +444,9 @@ GetImportanceSamplingFromModelFit <- function(
 
     imp_means <- colSums(imp_weights * draws_mat)
 
-    return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
+    return(list(imp_weights=imp_weights,
+                imp_lp_vec=imp_lp_vec,
+                lp_vec=lp_vec,
                 eff_num_imp_samples=eff_num_imp_samples,
                 imp_means=imp_means))
-}
-
-
-#' Get a dataframe with the hyperparameter values contained in a stan data list.
-#'
-#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
-#' @param stan_data The Stan data for the original model.
-#' @return A tidy dataframe with the hyperparameter names and values.
-#' @export
-GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
-  sens_par_list <- SetSensitivityParameterList(
-    stan_sensitivity_list$model_sens_params,
-    stan_sensitivity_list$model_params, stan_data)
-  pars_free <- rstan::unconstrain_pars(
-      stan_sensitivity_list$model_sens_fit, sens_par_list)
-  names(pars_free) <- stan_sensitivity_list$sens_param_names
-  hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,
-                              stan_sensitivity_list$param_names)
-  hyperparameter_df <-
-    data.frame(hyperparameter=hyperparam_names,
-               hyperparameter_val=pars_free[hyperparam_names])
-  rownames(hyperparameter_df) <- NULL
-  return(hyperparameter_df)
 }
