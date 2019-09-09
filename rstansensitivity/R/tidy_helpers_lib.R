@@ -258,6 +258,20 @@ RemoveExtraTidyColumns <- function(df) {
 }
 
 
+#' Convert a column of variable names to a tidy format.
+#' @export
+TidyColumn <- function(df, col, ..., variable_name=".variable") {
+  pars <- enquos(...)
+  par_names <- unique(df[[col]])
+  tidy_pars_df <-
+    matrix(par_names, nrow=1, dimnames=list("", par_names)) %>%
+    gather_draws(!!!pars) %>%
+    rename(!!sym(col):=.value, !!sym(variable_name):=.variable) %>%
+    select(-.chain, -.iteration, -.draw)
+  return(inner_join(df, tidy_pars_df, by=col))
+}
+
+
 GatherRowNamedMatrix <- function(mat, ...) {
     pars <- enquos(...)
     df <-
