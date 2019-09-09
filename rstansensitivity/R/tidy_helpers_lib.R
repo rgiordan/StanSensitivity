@@ -276,7 +276,7 @@ GatherRowNamedMatrix <- function(mat, ...) {
     pars <- enquos(...)
     df <-
         tidybayes::gather_draws(mat, !!!pars) %>%
-        inner_join(data.frame(.draw=1:nrow(mat), rowname=rownames(mat)),
+        inner_join(data.frame(.draw=1:nrow(mat), .rowname=rownames(mat)),
             by=".draw") %>%
         RemoveExtraTidyColumns()
     return(df)
@@ -293,7 +293,7 @@ GetTidySensitivityResults <- function(grad_mat,
   GetSensitivityDf <- function(mat, measure_name) {
     GatherRowNamedMatrix(mat, !!!pars) %>%
       mutate(measure=measure_name) %>%
-      rename(hyperparameter=rowname)
+      rename(hyperparameter=.rowname)
   }
   sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
   results <- GetSensitivityDf(sens_mat, "sensitivity")
