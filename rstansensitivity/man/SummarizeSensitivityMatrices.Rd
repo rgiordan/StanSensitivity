@@ -8,7 +8,8 @@ SummarizeSensitivityMatrices(sens_mat, sens_se, measure,
   num_se = qnorm(0.975))
 }
 \arguments{
-\item{sens_mat}{A matrix of sensitivities.  Hyperparameters should be in the rows and parameters in the columns.}
+\item{sens_mat}{A matrix of sensitivities.  Hyperparameters should be in
+the rows and parameters in the columns.}
 
 \item{sens_se}{A matrix of standard errors of \code{sens_mat}.}
 

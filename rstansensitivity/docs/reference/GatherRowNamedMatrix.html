@@ -6,7 +6,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Make a tidy dataframe out of a sensitivity matrix and its standard errors. — SummarizeSensitivityMatrices • rstansensitivity</title>
+<title>Gather a matrix as with <code>gather_draws</code>, adding a column for the
+rownames. — GatherRowNamedMatrix • rstansensitivity</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -32,9 +33,11 @@
 
 
 
-<meta property="og:title" content="Make a tidy dataframe out of a sensitivity matrix and its standard errors. — SummarizeSensitivityMatrices" />
+<meta property="og:title" content="Gather a matrix as with <code>gather_draws</code>, adding a column for the
+rownames. — GatherRowNamedMatrix" />
 
-<meta property="og:description" content="Make a tidy dataframe out of a sensitivity matrix and its standard errors." />
+<meta property="og:description" content="Gather a matrix as with gather_draws, adding a column for the
+rownames." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -98,56 +101,27 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Make a tidy dataframe out of a sensitivity matrix and its standard errors.</h1>
+    <h1>Gather a matrix as with <code>gather_draws</code>, adding a column for the
+rownames.</h1>
     
-    <div class="hidden name"><code>SummarizeSensitivityMatrices.Rd</code></div>
+    <div class="hidden name"><code>GatherRowNamedMatrix.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Make a tidy dataframe out of a sensitivity matrix and its standard errors.</p>
+    <p>Gather a matrix as with <code>gather_draws</code>, adding a column for the
+rownames.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>SummarizeSensitivityMatrices</span>(<span class='no'>sens_mat</span>, <span class='no'>sens_se</span>, <span class='no'>measure</span>,
-  <span class='kw'>num_se</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>qnorm</a></span>(<span class='fl'>0.975</span>))</pre>
-    
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>sens_mat</th>
-      <td><p>A matrix of sensitivities.  Hyperparameters should be in
-the rows and parameters in the columns.</p></td>
-    </tr>
-    <tr>
-      <th>sens_se</th>
-      <td><p>A matrix of standard errors of <code>sens_mat</code>.</p></td>
-    </tr>
-    <tr>
-      <th>measure</th>
-      <td><p>What to call these sensitivites.</p></td>
-    </tr>
-    <tr>
-      <th>num_se</th>
-      <td><p>The number of standard errors for the upper and lower bounds.</p></td>
-    </tr>
-    </table>
-    
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>A tidy dataframe with columns for the parameters, hyperparameters,
-sensitivities, and their standard errors.</p>
-    
+    <pre class="usage"><span class='fu'>GatherRowNamedMatrix</span>(<span class='no'>mat</span>, <span class='no'>...</span>)</pre>
+        
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-          </ul>
+                </ul>
 
   </div>
 </div>

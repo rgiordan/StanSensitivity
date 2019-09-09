@@ -1,10 +1,12 @@
 #!/usr/bin/env Rscript
 
+library(devtools)
 library(rstan)
 library(rstansensitivity)
 library(testthat)
 rstan_options(auto_write=TRUE)
 
+devtools::load_all()
 context("rstansensitivity")
 
 test_that("exact_derivatives_correct", {

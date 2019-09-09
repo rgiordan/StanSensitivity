@@ -53,7 +53,8 @@ SensitivityMatrixToDataframe <- function(
 
 
 #' Make a tidy dataframe out of a sensitivity matrix and its standard errors.
-#' @param sens_mat A matrix of sensitivities.  Hyperparameters should be in the rows and parameters in the columns.
+#' @param sens_mat A matrix of sensitivities.  Hyperparameters should be in
+#'      the rows and parameters in the columns.
 #' @param sens_se A matrix of standard errors of \code{sens_mat}.
 #' @param measure What to call these sensitivites.
 #' @param num_se The number of standard errors for the upper and lower bounds.
@@ -259,19 +260,28 @@ RemoveExtraTidyColumns <- function(df) {
 
 
 #' Convert a column of variable names to a tidy format.
+#' @param df A dataframe with a parameter column to be tidied.
+#' @param col The string name of the column to be tidied.
+#' @param ... A parameter listing in \code{tidybayes} for the parameters in the
+#'     column \code{df[[col]]}.
+#' @param variable_name Optional.  A string for the new column's variable name.
+#'      The default is ".variable", as is standard for \code{tidybayes}.
+#' @return A new dataframe with extra \code{tidybayes}-style columns.
 #' @export
 TidyColumn <- function(df, col, ..., variable_name=".variable") {
   pars <- enquos(...)
   par_names <- unique(df[[col]])
   tidy_pars_df <-
     matrix(par_names, nrow=1, dimnames=list("", par_names)) %>%
-    gather_draws(!!!pars) %>%
+    tidybayes::gather_draws(!!!pars) %>%
     rename(!!sym(col):=.value, !!sym(variable_name):=.variable) %>%
     select(-.chain, -.iteration, -.draw)
   return(inner_join(df, tidy_pars_df, by=col))
 }
 
 
+#' Gather a matrix as with \code{gather_draws}, adding a column for the
+#' rownames.
 GatherRowNamedMatrix <- function(mat, ...) {
     pars <- enquos(...)
     df <-

@@ -8,6 +8,7 @@ rstan_options(auto_write=TRUE)
 devtools::load_all()
 context("rstansensitivity")
 
+
 test_that("TidyColumnWorks", {
     parnames <- c(sprintf("a[%d]", 1:3), "b", sprintf("c[%d]", 1:5), "d")
 

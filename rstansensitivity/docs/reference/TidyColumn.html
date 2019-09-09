@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Make a tidy dataframe out of a sensitivity matrix and its standard errors. — SummarizeSensitivityMatrices • rstansensitivity</title>
+<title>Convert a column of variable names to a tidy format. — TidyColumn • rstansensitivity</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -32,9 +32,9 @@
 
 
 
-<meta property="og:title" content="Make a tidy dataframe out of a sensitivity matrix and its standard errors. — SummarizeSensitivityMatrices" />
+<meta property="og:title" content="Convert a column of variable names to a tidy format. — TidyColumn" />
 
-<meta property="og:description" content="Make a tidy dataframe out of a sensitivity matrix and its standard errors." />
+<meta property="og:description" content="Convert a column of variable names to a tidy format." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -98,46 +98,45 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Make a tidy dataframe out of a sensitivity matrix and its standard errors.</h1>
+    <h1>Convert a column of variable names to a tidy format.</h1>
     
-    <div class="hidden name"><code>SummarizeSensitivityMatrices.Rd</code></div>
+    <div class="hidden name"><code>TidyColumn.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Make a tidy dataframe out of a sensitivity matrix and its standard errors.</p>
+    <p>Convert a column of variable names to a tidy format.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>SummarizeSensitivityMatrices</span>(<span class='no'>sens_mat</span>, <span class='no'>sens_se</span>, <span class='no'>measure</span>,
-  <span class='kw'>num_se</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>qnorm</a></span>(<span class='fl'>0.975</span>))</pre>
+    <pre class="usage"><span class='fu'>TidyColumn</span>(<span class='no'>df</span>, <span class='no'>col</span>, <span class='no'>...</span>, <span class='kw'>variable_name</span> <span class='kw'>=</span> <span class='st'>".variable"</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>sens_mat</th>
-      <td><p>A matrix of sensitivities.  Hyperparameters should be in
-the rows and parameters in the columns.</p></td>
+      <th>df</th>
+      <td><p>A dataframe with a parameter column to be tidied.</p></td>
     </tr>
     <tr>
-      <th>sens_se</th>
-      <td><p>A matrix of standard errors of <code>sens_mat</code>.</p></td>
+      <th>col</th>
+      <td><p>The string name of the column to be tidied.</p></td>
     </tr>
     <tr>
-      <th>measure</th>
-      <td><p>What to call these sensitivites.</p></td>
+      <th>...</th>
+      <td><p>A parameter listing in <code>tidybayes</code> for the parameters in the
+column <code>df[[col]]</code>.</p></td>
     </tr>
     <tr>
-      <th>num_se</th>
-      <td><p>The number of standard errors for the upper and lower bounds.</p></td>
+      <th>variable_name</th>
+      <td><p>Optional.  A string for the new column's variable name.
+The default is ".variable", as is standard for <code>tidybayes</code>.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A tidy dataframe with columns for the parameters, hyperparameters,
-sensitivities, and their standard errors.</p>
+    <p>A new dataframe with extra <code>tidybayes</code>-style columns.</p>
     
 
   </div>

@@ -1,8 +1,10 @@
+# These are experimental ways of doing a different design.  i'm not going to
+# export any for the moment, but I'll keep them here as a placeholder.
+
 library(tidybayes)
 library(dplyr)
 
 
-#' @export
 GetWeightMatrixSecondDerivative <- function(stanfit, log_lik_name="log_lik") {
   log_lik <- t(as.matrix(stanfit, log_lik_name))
   log_lik <- log_lik - rowMeans(log_lik)
@@ -40,13 +42,6 @@ GetWeightMatrixPredictor <- function(stanfit, log_lik_name="log_lik") {
 
     return(PredictDiff)
 }
-
-
-# CleanGather <- function(mat, ...) {
-#   pars <- enquos(...)
-#   gather_draws(mat, !!!pars) %>%
-#     select(-.chain, -.iteration, -.draw)
-# }
 
 
 GetTidyWeightPredictor <- function(...,
