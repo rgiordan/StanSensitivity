@@ -1,6 +1,7 @@
+# Tools for getting `grad_mat` (the matrix of partial derivatives
+# of the log posterior with respect to the hyperparameters) out of Stan.
+
 library(rstan)
-library(dplyr)
-library(reshape2)
 
 
 # Just a more readable shortcut for the Stan attribute.
@@ -17,10 +18,7 @@ GetParamNames <- function(model_fit) {
 #'
 #' @return The full path of the generated file to be used for sampling.
 #' @export
-#' @examples
-#' model_name <- GenerateSensitivityFromModel("models/my_model.stan")
-#' model <- stan_model(GetSamplingModelFilename(model_name))
-#' sampling_result <- sampling(model, data=stan_data)
+#' @example inst/examples/GenerateSensitivityFromModel.R
 GetSamplingModelFilename <- function(model_name) {
     return(paste(model_name, "_generated.stan", sep=""))
 }
@@ -36,15 +34,16 @@ GetSamplingModelFilename <- function(model_name) {
 #' functions in this library.  The function also generates the sensitivity model
 #' files in the same location as the original base model.
 #' @export
-#' @examples
-#' GenerateSensitivityFromModel("models/my_model.stan")
+#' @example inst/examples/GenerateSensitivityFromModel.R
 GenerateSensitivityFromModel <- function(
         base_model_name,
         python_script=system.file("generate_models.py",
                                   package="rstansensitivity")) {
 
     model_suffix <-
-        substr(base_model_name, nchar(base_model_name) - 4, nchar(base_model_name))
+        substr(base_model_name,
+               nchar(base_model_name) - 4,
+               nchar(base_model_name))
     stopifnot(model_suffix == ".stan")
     system(paste("python ", python_script,
                  " --base_model=", base_model_name, sep=""))
@@ -59,14 +58,15 @@ GenerateSensitivityFromModel <- function(
 #' @param model_sens_params A stanfit object with the sensitivity model
 #' parameters.  In order to guarantee legal initial values, it may be
 #' preferable to use an empty model block.
-#' @param model_sens_params A stanfit object for the original model.
+#' @param model_params A stanfit object for the original model.
 #' @param stan_data The stan data list for the original model with
 #' hyperparameters specified for reading in the data block.  Each hyperparameter
-#' in the model_sens_params stanfit model must be specified in \code{stan_data}.
+#' in the \code{model_sens_params} stanfit model must be specified in
+#' \code{stan_data}.
 #' @return A list of valid model parameters than can be passed to the
-#' sensivitiy model, in which the sampled parameters are taken from
+#' sensivity model, in which the sampled parameters are taken from
 #' \code{model_params} and the hyperparameters are taken from \code{stan_data}.
-#' @export
+##' @export
 SetSensitivityParameterList <- function(
     model_sens_params, model_params, stan_data) {
 
@@ -118,9 +118,10 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
     # This is the stan fit object that we will use to evaluate the gradient
     # of the log probability at the MCMC draws.
-    model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
-                           data=stan_data, algorithm="Fixed_param",
-                           iter=1, chains=1, init=list(sens_par_list))
+    model_sens_fit <- rstan::stan(
+        paste(model_name, "_sensitivity.stan", sep=""),
+        data=stan_data, algorithm="Fixed_param",
+        iter=1, chains=1, init=list(sens_par_list))
 
     # These names help sort through the vectors of sensitivity.
     param_names <- GetParamNames(model_params)
@@ -136,67 +137,94 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
 
 #' Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-#' from a different model.
+#' from a different model.  The model \code{model_stanfit} is evaluated
+#' at the draws found in \code{samples_stanfit}.  If there are parameters in
+#' \code{model_stanfit} that are not contained in \code{samples_stanfit},
+#' values from \code{model_par_list} are used.
 #'
-#' @param sampling_result The output of Stan sampling (e.g. rstan::sampling())
-#' @param model_fit A stanfit object from a model, possibly containing a
-#' superset of the parameters in sampling_result.
-#' @param A list of parameters for model_fit which can be passed to
-#' \code{unconstrain_pars} for the \code{model_fit} model.  Every parameter
-#' in \code{get_inits} applied to \code{sampling_result} must be also be found
+#' This was designed to evaluate gradients with respect to hyperparameters
+#' which are Stan parameters in \code{model_stanfit} but not in
+#' \code{samples_stanfit}.  The values of those hyperparameters would be
+#' specified in \code{model_par_list} and reused for each evaluation of
+#' \code{model_stanfit}.  Since this is the intended use case, the function
+#' requires that \code{model_stanfit} contains a (non-strict) superset of the
+#' parameters in \code{samples_stanfit}.
+#'
+#' @param samples_stanfit (sampling_result) The output of Stan sampling
+#' containing the draws at which you want to evaluate the model.
+#' (e.g. \code{rstan::sampling()})
+#' @param model_stanfit (model_fit) A stanfit object from a model, possibly containing a
+#' superset of the parameters in samples_stanfit.
+#' @param model_par_list A list of parameters for model_stanfit which can be
+#' passed to
+#' \code{unconstrain_pars} for the \code{model_stanfit} model.  Every parameter
+#' in \code{get_inits} applied to \code{samples_stanfit} must be also be found
 #' in \code{model_par_list}.
 #' @param compute_grads If FALSE, only return the log probability.
+#' @param max_chains How many chains to evaluate.  The default is to
+#' evaluate the number of chains in \code{samples_stanfit}.
+#' @param max_num_samples How many samples to evaluate.  The default is to
+#' evaluate the number of non-warmup samples in \code{samples_stanfit}.
+#' @param verbose If true, display progress messages.
 #' @return
 #' A list with \code{lp_vec} containing a vector of log probabilities and,
 #' if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
-#' all with resepct to the parameters in \code{model_fit} at the draws in
-#' \code{sampling_result}.  If the sampler contains multiple chains the
+#' all with resepct to the parameters in \code{model_stanfit} at the draws in
+#' \code{samples_stanfit}.  If the sampler contains multiple chains the
 #' chains are concatenated in order.
-#' @export
+##' @export
 EvaluateModelAtDraws <- function(
-    sampling_result, model_fit, model_par_list,
-    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf) {
+    samples_stanfit, model_stanfit, model_par_list,
+    compute_grads=FALSE, max_chains=Inf, max_num_samples=Inf,
+    verbose=TRUE) {
 
-  num_warmup_samples <- sampling_result@sim$warmup
-  num_samples <- min(sampling_result@sim$iter - num_warmup_samples,
+  num_warmup_samples <- samples_stanfit@sim$warmup
+  num_samples <- min(samples_stanfit@sim$iter - num_warmup_samples,
                      max_num_samples)
-  num_chains <- min(sampling_result@sim$chains, max_chains)
+  num_chains <- min(samples_stanfit@sim$chains, max_chains)
 
-  # Check that every parameter in the sampling results is also in the model
-  # parameter list.
-  par_list_check <- get_inits(sampling_result, iter=1)[[1]]
-  missing_pars <- setdiff(names(par_list_check), names(model_par_list))
+  # Check that every parameter in the samples_stanfit is also in model_stanfit.
+  samples_stanfit_pars <- rstan::get_inits(samples_stanfit, iter=1)[[1]]
+  missing_pars <- setdiff(names(samples_stanfit_pars), names(model_par_list))
   if (length(missing_pars) > 0) {
-      stop(sprintf(
-          "Parameters from sampling result not in new model: %s",
-          paste(missing_pars, collapse=", ")))
+      err_msg <- paste0(
+          "Every parameter in `samples_stanfit` must also be found in ",
+          "`model_stanfit`.  ",
+          sprintf(
+              "Parameters from sampling result not in new model: %s",
+              paste(missing_pars, collapse=", ")))
+      stop(err_msg)
   }
 
   # Get the model gradients with respect to the hyperparameters (and parameters).
   lp_vec <- rep(NA, num_samples)
   if (compute_grads) {
-    param_names <- GetParamNames(model_fit)
-    grad_mat <- matrix(NA, length(param_names), num_samples * num_chains)
+    param_names <- GetParamNames(model_stanfit)
+    grad_mat <- matrix(
+        NA, nrow=length(param_names), ncol=num_samples * num_chains)
     rownames(grad_mat) <- param_names
   } else {
     grad_mat <- matrix()
   }
 
   for (chain in 1:num_chains) {
-      cat("Evaluating model at the MCMC draws for chain ",
-          chain, ".\n")
-      prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+      if (verbose) {
+          cat("Evaluating model at the MCMC draws for chain ", chain, ".\n")
+          prog_bar <- txtProgressBar(min=1, max=num_samples, style=3)
+      }
       for (n in 1:num_samples) {
-        setTxtProgressBar(prog_bar, value=n)
+         if (verbose) {
+             setTxtProgressBar(prog_bar, value=n)
+         }
 
         # We rely on get_inits to return the draws at iteration n in a form
         # that is easy to parse.
         par_list <- get_inits(
-            sampling_result, iter=n + num_warmup_samples)[[chain]]
+            samples_stanfit, iter=n + num_warmup_samples)[[chain]]
         for (par in ls(par_list)) {
           model_par_list[[par]] <- par_list[[par]]
         }
-        pars_free <- unconstrain_pars(model_fit, model_par_list)
+        pars_free <- rstan::unconstrain_pars(model_stanfit, model_par_list)
 
         # The index in the matrix stacked by chain.
         # This needs to match the stacking done to the Stan samples in
@@ -205,14 +233,16 @@ EvaluateModelAtDraws <- function(
         # put them into compatible shapes...
         ix <- (chain - 1) * num_samples + n
         if (compute_grads) {
-          glp <- grad_log_prob(model_fit, pars_free)
+          glp <- rstan::grad_log_prob(model_stanfit, pars_free)
           grad_mat[, ix] <- glp
           lp_vec[ix] <- attr(glp, "log_prob")
         } else {
-          lp_vec[ix] <- log_prob(model_fit, pars_free)
+          lp_vec[ix] <- rstan::log_prob(model_stanfit, pars_free)
         }
       }
-      close(prog_bar)
+      if (verbose) {
+          close(prog_bar)
+      }
   }
   return(list(lp_vec=lp_vec, grad_mat=grad_mat))
 }
@@ -239,12 +269,12 @@ CheckModelEquivalence <- function(
     check_grads=TRUE,
     tol=1e-8, max_chains=1, max_num_samples=100) {
 
-    model_fit_1 <- sampling(
+    model_fit_1 <- rstan::sampling(
         object=model_1, data=stan_data_1,
         algorithm="Fixed_param", iter=1, chains=1)
     model_par_list_1 <- get_inits(model_fit_1, 1)[[1]]
 
-    model_fit_2 <- sampling(
+    model_fit_2 <- rstan::sampling(
         object=model_2, data=stan_data_2,
         algorithm="Fixed_param", iter=1, chains=1)
     model_par_list_2 <- get_inits(model_fit_2, 1)[[1]]
@@ -327,15 +357,12 @@ StackChainArray <- function(draws_array) {
 #' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
 #' @return A list of matrices.  The elements of the list are
 #' \itemize{
-#'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
-#'     \item{sens_mat_normalized: }{The same quantities as \code{sens_mat}, but normalized by the posterior standard deviation.}
 #'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
 #'     \item{lp_vec: }{The log probability of the model at each draw.}
 #'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
 #' }
-#' The result can be used directly, or passed to \code{GetTidyResult}.
 #' @export
-GetStanSensitivityFromModelFit <- function(
+GetStanSensitivityMatricesFromModelFit <- function(
     sampling_result, stan_sensitivity_list) {
 
     draws_mat <- StackChainArray(extract(sampling_result, permute=FALSE))
@@ -353,15 +380,43 @@ GetStanSensitivityFromModelFit <- function(
     grad_mat <- model_at_draws$grad_mat[
         setdiff(sens_param_names, param_names),, drop=FALSE]
 
+    return(list(grad_mat=grad_mat,
+                lp_vec=model_at_draws$lp_vec,
+                draws_mat=draws_mat))
+}
+
+
+#' Process the results of Stan samples and GetStanSensitivityModel into a
+#' sensitivity matrix.  Note that currently, only the first chain is supported.
+#'
+#' @param sampling_result The output of \code{stan::sampling}
+#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
+#' @return A list of matrices.  The elements of the list are
+#' \itemize{
+#'     \item{sens_mat: }{The local sensitivity of each posterior parameter to each hyperparameter.}
+#'     \item{sens_mat_normalized: }{\code{sens_mat}, but normalized by the posterior standard deviation.}
+#'     \item{grad_mat: }{The gradients of the log posterior evaluatated at the draws.}
+#'     \item{lp_vec: }{The log probability of the model at each draw.}
+#'     \item{draws_mat: }{The parameter draws in the same order as that of \code{grad_mat}}.
+#' }
+#' The result can be used directly, or passed to \code{GetTidyResult}.
+#' @export
+GetStanSensitivityFromModelFit <- function(
+    sampling_result, stan_sensitivity_list) {
+
+    # TODO: deprecate this for something more general.
+    sens_mats <- GetStanSensitivityMatricesFromModelFit(
+        sampling_result, stan_sensitivity_list)
+
     # Calculate the sensitivity.
-    sens_mat <- GetSensitivityFromGrads(grad_mat, draws_mat)
+    sens_mats$sens_mat <- GetSensitivityFromGrads(
+        sens_mats$grad_mat, sens_mats$draws_mat)
 
     # Normalize by the marginal standard deviation.
-    sens_mat_normalized <- NormalizeSensitivityMatrix(sens_mat, draws_mat)
+    sens_mats$sens_mat_normalized <- NormalizeSensitivityMatrix(
+        sens_mats$sens_mat, sens_mats$draws_mat)
 
-    return(list(sens_mat=sens_mat, sens_mat_normalized=sens_mat_normalized,
-                grad_mat=grad_mat, lp_vec=model_at_draws$lp_vec,
-                draws_mat=draws_mat))
+    return(sens_mats)
 }
 
 
@@ -389,30 +444,9 @@ GetImportanceSamplingFromModelFit <- function(
 
     imp_means <- colSums(imp_weights * draws_mat)
 
-    return(list(imp_weights=imp_weights, imp_lp_vec=imp_lp_vec, lp_vec=lp_vec,
+    return(list(imp_weights=imp_weights,
+                imp_lp_vec=imp_lp_vec,
+                lp_vec=lp_vec,
                 eff_num_imp_samples=eff_num_imp_samples,
                 imp_means=imp_means))
-}
-
-
-#' Get a dataframe with the hyperparameter values contained in a stan data list.
-#'
-#' @param stan_sensitivity_list The output of \code{GetStanSensitivityModel}
-#' @param stan_data The Stan data for the original model.
-#' @return A tidy dataframe with the hyperparameter names and values.
-#' @export
-GetHyperparameterDataFrame <- function(stan_sensitivity_list, stan_data) {
-  sens_par_list <- SetSensitivityParameterList(
-    stan_sensitivity_list$model_sens_params,
-    stan_sensitivity_list$model_params, stan_data)
-  pars_free <- unconstrain_pars(
-      stan_sensitivity_list$model_sens_fit, sens_par_list)
-  names(pars_free) <- stan_sensitivity_list$sens_param_names
-  hyperparam_names <- setdiff(stan_sensitivity_list$sens_param_names,
-                              stan_sensitivity_list$param_names)
-  hyperparameter_df <-
-    data.frame(hyperparameter=hyperparam_names,
-               hyperparameter_val=pars_free[hyperparam_names])
-  rownames(hyperparameter_df) <- NULL
-  return(hyperparameter_df)
 }

@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(testthat)
 library(rstansensitivity)
 library(rstan)
@@ -22,7 +24,7 @@ GenerateTestModels <- function() {
   }
 
   "
-  
+
   model_name <- "/tmp/rstansensitivity_test"
   base_model_name <- paste(model_name, "stan", sep=".")
   model_file <- file(base_model_name, "w")
@@ -71,7 +73,7 @@ test_that("conjugate_model_works", {
   # Sanity checks.
   expect_true(abs(post_mean - mu_summary["mean"]) / (3 * post_se)  < 1)
   expect_true(abs(post_sd - mu_summary["sd"]) / (3 * post_se)  < 1)
-  
+
   # Check the sensitivity.
   stan_sensitivity_list <- GetStanSensitivityModel(model_name, stan_data)
   sens_result <- GetStanSensitivityFromModelFit(result, stan_sensitivity_list)

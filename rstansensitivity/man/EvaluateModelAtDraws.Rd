@@ -3,32 +3,52 @@
 \name{EvaluateModelAtDraws}
 \alias{EvaluateModelAtDraws}
 \title{Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model.}
+from a different model.  The model \code{model_stanfit} is evaluated
+at the draws found in \code{samples_stanfit}.  If there are parameters in
+\code{model_stanfit} that are not contained in \code{samples_stanfit},
+values from \code{model_par_list} are used.}
 \usage{
-EvaluateModelAtDraws(sampling_result, model_fit, model_par_list,
-  compute_grads = FALSE, max_chains = Inf, max_num_samples = Inf)
+EvaluateModelAtDraws(samples_stanfit, model_stanfit, model_par_list,
+  compute_grads = FALSE, max_chains = Inf, max_num_samples = Inf,
+  verbose = TRUE)
 }
 \arguments{
-\item{sampling_result}{The output of Stan sampling (e.g. rstan::sampling())}
+\item{samples_stanfit}{(sampling_result) The output of Stan sampling
+containing the draws at which you want to evaluate the model.
+(e.g. \code{rstan::sampling()})}
 
-\item{model_fit}{A stanfit object from a model, possibly containing a
-superset of the parameters in sampling_result.}
+\item{model_stanfit}{(model_fit) A stanfit object from a model, possibly containing a
+superset of the parameters in samples_stanfit.}
+
+\item{model_par_list}{A list of parameters for model_stanfit which can be
+passed to
+\code{unconstrain_pars} for the \code{model_stanfit} model.  Every parameter
+in \code{get_inits} applied to \code{samples_stanfit} must be also be found
+in \code{model_par_list}.}
 
 \item{compute_grads}{If FALSE, only return the log probability.}
 
-\item{A}{list of parameters for model_fit which can be passed to
-\code{unconstrain_pars} for the \code{model_fit} model.  Every parameter
-in \code{get_inits} applied to \code{sampling_result} must be also be found
-in \code{model_par_list}.}
+\item{max_chains}{How many chains to evaluate.  The default is to
+evaluate the number of chains in \code{samples_stanfit}.}
+
+\item{max_num_samples}{How many samples to evaluate.  The default is to
+evaluate the number of non-warmup samples in \code{samples_stanfit}.}
+
+\item{verbose}{If true, display progress messages.}
 }
 \value{
 A list with \code{lp_vec} containing a vector of log probabilities and,
 if \code{compute_grads} is \code{TRUE}, gradients of the log probability,
-all with resepct to the parameters in \code{model_fit} at the draws in
-\code{sampling_result}.  If the sampler contains multiple chains the
+all with resepct to the parameters in \code{model_stanfit} at the draws in
+\code{samples_stanfit}.  If the sampler contains multiple chains the
 chains are concatenated in order.
 }
 \description{
-Evaluate a model (represented as a stanfit object) at MCMC draws, possibly
-from a different model.
+This was designed to evaluate gradients with respect to hyperparameters
+which are Stan parameters in \code{model_stanfit} but not in
+\code{samples_stanfit}.  The values of those hyperparameters would be
+specified in \code{model_par_list} and reused for each evaluation of
+\code{model_stanfit}.  Since this is the intended use case, the function
+requires that \code{model_stanfit} contains a (non-strict) superset of the
+parameters in \code{samples_stanfit}.
 }

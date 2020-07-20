@@ -1,3 +1,5 @@
+# Utilities using `mcmcse` to evaluate standard errors for correlations.
+
 library(mcmcse)
 
 
@@ -11,7 +13,10 @@ GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
     arg_draws <- cbind(x_draws * y_draws, x_draws, y_draws)
     arg_cov_mat <- mcmcse::mcse.multi(arg_draws)$cov
     grad_g <- c(1, -1 * y_mean, -1 * x_mean)
-    g_se <- as.numeric(sqrt(t(grad_g) %*% arg_cov_mat %*% grad_g / nrow(arg_draws)))
+    g_se <- as.numeric(
+        sqrt(t(grad_g) %*%
+        arg_cov_mat %*%
+        grad_g / nrow(arg_draws)))
   }
   return(g_se)
 }
@@ -27,6 +32,7 @@ PackNormalizedCovariancePar <- function(x_draws, y_draws) {
 }
 
 GetNormalizedCovarianceGradient <- function(par) {
+  # We use this to apply the delta method to normalizes sensitivities.
   mean_xy <- par[1]
   mean_x2 <- par[2]
   mean_x <- par[3]
@@ -76,6 +82,7 @@ GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
 GetSensitivityStandardErrors <- function(
     draws_mat, grad_mat, fix_mean=FALSE, normalized=FALSE) {
 
+  # TODO: fix the order of these arguments to match everything else.
   if (normalized && fix_mean) {
     stop("You cannot specify both fix_mean and normalized.")
   }

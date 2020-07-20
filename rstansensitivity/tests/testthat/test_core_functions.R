@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(rstan)
 library(rstansensitivity)
 library(testthat)
