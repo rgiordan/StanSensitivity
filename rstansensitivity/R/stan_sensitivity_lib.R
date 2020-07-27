@@ -2,11 +2,7 @@ library(rstan)
 library(dplyr)
 library(reshape2)
 
-
-# Just a more readable shortcut for the Stan attribute.
-GetParamNames <- function(model_fit) {
-    model_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-}
+source("stan_utils_lib.R")
 
 #' Get the filename of the stan model to be used for sampling.
 #'

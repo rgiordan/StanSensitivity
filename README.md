@@ -4,30 +4,30 @@ This package contains tools that allow users
 to automatically generate local sensitivity measures to hyperparameters in
 [Stan](http://mc-stan.org/) using the [RStan](http://mc-stan.org/interfaces/rstan.html) interface.
 
-In Bayesian analysis, priors and likelihoods typically have hyperparameters that are fixed by the modeler. Naturally,
-posterior expectations of parameters are functions of these hyperparameters.  If a range of hyperparameters are plausible, one hopes
-that the posterior expectations don't depend too strongly on the
-particular values of the hyperparameters.  A model and dataset
-is called "robust" when relevant posterior expectations don't vary
-meaningfully as the hyperparameters vary over their plausible values.
+In Bayesian analysis, priors and likelihoods typically have hyperparameters that
+are fixed by the modeler. Naturally, posterior expectations of parameters are
+functions of these hyperparameters.  If a range of hyperparameters are
+plausible, one hopes that the posterior expectations don't depend too strongly
+on the particular values of the hyperparameters.  A model and dataset is called
+"robust" when relevant posterior expectations don't vary meaningfully as the
+hyperparameters vary over their plausible values.
 
-For example, in the `normal_censored`
-stan example, the likelihood has a fixed value of `y_var=1`.
-If we aren't sure that `y_var` should be
-exactly `1`, we might hope that the expectation of the parameter `mu`
-doesn't depend too strongly on the precise value of `y_var`.
-Here is a graph of the actual dependence (in blue):
+For example, in the `normal_censored` stan example, the likelihood has a fixed
+value of `y_var=1`. If we aren't sure that `y_var` should be exactly `1`, we
+might hope that the expectation of the parameter `mu` doesn't depend too
+strongly on the precise value of `y_var`. Here is a graph of the actual
+dependence (in blue):
 
 ![Sensitivity graph](docs/IllustrativeGraph-1.png)
 
-Evaluating the exact dependence of posterior expectations on the hyperparameters typically requires re-fitting the model many times,
-which can be expensive.  That is what we did to form the above graph.
-However, it is possible to form a linear
-approximation to the dependence (shown in red above)
-using only samples at a fixed value of the hyperparameters [1,2,3].  Our package, `rstansensitivity`, estimates this linear approximation.
-It only needs draws from the posterior at one fixed value of the
-hyperparameters (alpha naught in the figure, which corresponds to
-`y_var=1` in the example).
+Evaluating the exact dependence of posterior expectations on the hyperparameters
+typically requires re-fitting the model many times, which can be expensive.
+That is what we did to form the above graph. However, it is possible to form a
+linear approximation to the dependence (shown in red above) using only samples
+at a fixed value of the hyperparameters [1,2,3].  Our package,
+`rstansensitivity`, estimates this linear approximation. It only needs draws
+from the posterior at one fixed value of the hyperparameters (alpha naught in
+the figure, which corresponds to `y_var=1` in the example).
 
 ## Some caveats
 
