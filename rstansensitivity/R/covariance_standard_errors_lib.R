@@ -1,4 +1,4 @@
-draws1_matdraws1_matdraws1_matlibrary(mcmcse)
+library(mcmcse)
 
 
 mcse.multi_safe <- function(arg_draws) {

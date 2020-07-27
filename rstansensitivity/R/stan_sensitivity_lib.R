@@ -2,7 +2,7 @@ library(rstan)
 library(dplyr)
 library(reshape2)
 
-source("stan_utils_lib.R")
+#source("./stan_utils_lib.R")
 
 #' Get the filename of the stan model to be used for sampling.
 #'
