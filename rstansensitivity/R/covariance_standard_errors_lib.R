@@ -1,4 +1,4 @@
-library(mcmcse)
+draws1_matdraws1_matdraws1_matlibrary(mcmcse)
 
 
 mcse.multi_safe <- function(arg_draws) {
@@ -36,6 +36,7 @@ PackNormalizedCovariancePar <- function(x_draws, y_draws) {
   ))
 }
 
+
 GetNormalizedCovarianceGradient <- function(par) {
   mean_xy <- par[1]
   mean_x2 <- par[2]
@@ -51,6 +52,7 @@ GetNormalizedCovarianceGradient <- function(par) {
   ))
 }
 
+
 # For testing.
 GetNormalizedCovariance <- function(par) {
   mean_xy <- par[1]
@@ -62,6 +64,7 @@ GetNormalizedCovariance <- function(par) {
   return(sigma_xy / sigma_x)
 }
 
+
 GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
   par_draws <- PackNormalizedCovariancePar(x_draws, y_draws)
   par_cov_mat <- mcse.multi_safe(par_draws)$cov
@@ -69,6 +72,7 @@ GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
   return(
     as.numeric(sqrt(t(grad_g) %*% par_cov_mat %*% grad_g / nrow(par_draws))))
 }
+
 
 #' Estimate Monte Carlo standard errors for the sensitivity matrices using
 #' a normal approximation and the delta method.  These standard errors are
@@ -109,4 +113,57 @@ GetSensitivityStandardErrors <- function(
     }
   }
   return(cov_se_mat)
+}
+
+
+
+# Bootstrap the covariance matrices using a block bootstrap on the
+# MCMC chain.
+GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
+                                            num_blocks, num_draws) {
+
+    if (nrow(draws1_mat) != nrow(draws2_mat)) {
+        stop("draws1_mat and draws2_mat must have the same number of rows.")
+    }
+
+    num_samples <- nrow(draws1_mat)
+
+    block_size <- floor(num_samples / num_blocks)
+
+    # Correction factor if the number of blocked observations is not the same
+    # as the original.
+    n_factor <- (block_size * num_blocks) / num_samples
+
+    # The indices of each block into the MCMC samples.
+    block_inds <- lapply(
+      1:num_blocks,
+      function(ind) { (ind - 1) * block_size + 1:block_size })
+
+    # Lists of the draws of each block.
+    draws1_blocks <- lapply(
+      1:num_blocks, function(ind) { draws1_mat[block_inds[[ind]], ]} )
+    draws2_blocks <- lapply(
+      1:num_blocks, function(ind) { draws2_mat[block_inds[[ind]], ]} )
+
+    # Bind blocks together according to random block indices.
+    DrawBlocks <- function(draw_blocks, block_ind_draws) {
+        return(do.call(rbind,
+                       lapply(block_ind_draws,
+                              function(ind) { draw_blocks[[ind]] })))
+    }
+
+    cov_samples <- array(NA, c(num_draws, ncol(draws1_mat), ncol(draws2_mat)))
+    for (draw in 1:num_draws) {
+        block_ind_draws <- sample(1:num_blocks, num_blocks, replace=TRUE)
+
+        draws1_mat_sampled <- DrawBlocks(draws1_blocks, block_ind_draws)
+        draws2_mat_sampled <- DrawBlocks(draws2_blocks, block_ind_draws)
+
+        cov_samples[draw, , ] <-
+          ComputeIJCovariance(draws1_mat_sampled, draws2_mat_sampled)
+    }
+
+    cov_se <- sqrt(n_factor) * apply(cov_samples, MARGIN=c(2, 3), sd)
+
+    return(list(cov_samples=cov_samples, cov_se=cov_se))
 }
