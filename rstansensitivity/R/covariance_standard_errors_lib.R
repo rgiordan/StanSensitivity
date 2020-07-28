@@ -4,9 +4,9 @@ library(mcmcse)
 mcse.multi_safe <- function(arg_draws) {
     # Set a default to return if the method fails.
     output_list <- list(cov=matrix(NA, ncol(arg_draws), ncol(arg_draws)))
-    tryCatch(output_list <- mcse.multi_safe(arg_draws),
-             error=function(e) { print(e) },
-             warning=function(w) { print(w) }) # Should we suppress the warning?
+    tryCatch(output_list <- mcmcse::mcse.multi(arg_draws),
+             error=function(e) { print(sprintf("%s", e)) },
+             warning=function(w) { print(sprintf("%s", w)) })
     return(output_list$cov)
 }
 
@@ -19,7 +19,7 @@ GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
     g_se <- mcmcse::mcse(g_draws)$se
   } else {
     arg_draws <- cbind(x_draws * y_draws, x_draws, y_draws)
-    arg_cov_mat <- mcse.multi_safe(arg_draws)$cov
+    arg_cov_mat <- mcse.multi_safe(arg_draws)
     grad_g <- c(1, -1 * y_mean, -1 * x_mean)
     g_se <- as.numeric(sqrt(t(grad_g) %*% arg_cov_mat %*% grad_g / nrow(arg_draws)))
   }
@@ -67,7 +67,7 @@ GetNormalizedCovariance <- function(par) {
 
 GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
   par_draws <- PackNormalizedCovariancePar(x_draws, y_draws)
-  par_cov_mat <- mcse.multi_safe(par_draws)$cov
+  par_cov_mat <- mcse.multi_safe(par_draws)
   grad_g <- GetNormalizedCovarianceGradient(colMeans(par_draws))
   return(
     as.numeric(sqrt(t(grad_g) %*% par_cov_mat %*% grad_g / nrow(par_draws))))

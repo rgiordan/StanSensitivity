@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: person("Ryan", "Giordano", email = "rgiordan@mit.edu", role = c("aut", "cre"))
 Maintainer@R: person("Ryan", "Giordano", email = "rgiordan@mit.edu", role = c("aut", "cre"))
 Description: Use Stan's autodifferentiation capabilities to automatically calculate Monte Carlo estimates of local sensitivity of posterior means to hyperparameters.
-Depends: R (>= 3.2.3), rstan, dplyr, reshape2
+Depends: R (>= 3.2.3), rstan, dplyr, reshape2, mcmcse (>= 1.4)
 License: ALv2
 Encoding: UTF-8
 LazyData: true

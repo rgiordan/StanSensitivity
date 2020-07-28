@@ -3,8 +3,10 @@ library(rstansensitivity)
 library(testthat)
 rstan_options(auto_write=TRUE)
 
+context("rstansensitivity")
+
 test_that("basic_functionality", {
-  TypeForTest <- function(typename, varname=NULL, dim="", dist=NULL) {
+TypeForTest <- function(typename, varname=NULL, dim="", dist=NULL) {
   if (is.null(varname)) {
     varname <- paste(typename, "x", sep="_")
   }

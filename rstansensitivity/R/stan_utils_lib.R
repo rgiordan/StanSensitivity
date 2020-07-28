@@ -10,15 +10,15 @@ GetDummyStanfit <- function(model, data, init=NULL) {
     if (!is.null(init)) {
         suppressWarnings(
             dummy_stanfit <-
-                sampling(model, data=data,
-                         algorithm="Fixed_param", init=init,
-                         iter=1, chains=1, refresh=0))
+                stan(model, data=data,
+                     algorithm="Fixed_param", init=init,
+                     iter=1, chains=1, refresh=0))
     } else {
         suppressWarnings(
             dummy_stanfit <-
-                sampling(model, data=data,
-                         algorithm="Fixed_param",
-                         iter=1, chains=1, refresh=0))
+                stan(model, data=data,
+                     algorithm="Fixed_param",
+                     iter=1, chains=1, refresh=0))
     }
     return(dummy_stanfit)
 }
