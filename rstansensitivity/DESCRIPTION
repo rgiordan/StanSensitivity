@@ -8,5 +8,5 @@ Depends: R (>= 3.2.3), rstan, dplyr, reshape2, rstanarm, mcmcse (>= 1.4)
 License: ALv2
 Encoding: UTF-8
 LazyData: true
-Suggests: testthat
+Suggests: testthat, sandwich
 RoxygenNote: 7.0.2

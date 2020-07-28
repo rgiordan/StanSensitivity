@@ -35,6 +35,11 @@ TestIJ <- function(misspecified, grouped) {
         loglik_draws <- GroupLogLikelihoodDraws(loglik_draws, z)
     }
     ij_cov <- ComputeIJCovariance(loglik_draws, param_draws)
+    ij_cov_df <- CovarianceMatrixToDataframe(ij_cov)
+    expect_true(nrow(ij_cov_df) == 16)
+    ij_cov_df <- CovarianceMatrixToDataframe(ij_cov, remove_repeats=TRUE)
+    expect_true(nrow(ij_cov_df) == 6)
+    
     scale_mat <- diag(1 / sqrt(diag(ij_cov)))
     rownames(scale_mat) <- colnames(scale_mat) <- rownames(ij_cov)
     

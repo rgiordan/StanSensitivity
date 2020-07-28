@@ -14,13 +14,15 @@ library(reshape2)
 #' @export
 CovarianceMatrixToDataframe <- function(cov_mat, remove_repeats=FALSE) {
   if (is.null(colnames(cov_mat))) {
-    column_names <- paste0("col", 1:ncol(cov_mat))
-    colnames(cov_mat) <- column_names
+    colnames(cov_mat) <- paste0("col", 1:ncol(cov_mat))
   }
+  column_names <- colnames(cov_mat)
+
   if (is.null(rownames(cov_mat))) {
-    row_names <- paste0("row", 1:nrow(cov_mat))
-    rownames(cov_mat) <- row_names
+    rownames(cov_mat) <- paste0("row", 1:nrow(cov_mat))
   }
+  row_names <- rownames(cov_mat)
+
   cov_df <- data.frame(cov_mat, stringsAsFactors=FALSE)
   names(cov_df) <- column_names
   row_df <- data.frame(row_variable=row_names, row=1:length(row_names),
