@@ -120,7 +120,9 @@ GetSensitivityStandardErrors <- function(
 # Bootstrap the covariance matrices using a block bootstrap on the
 # MCMC chain.
 GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
-                                            num_blocks, num_draws) {
+                                            num_blocks, num_draws,
+                                            cov_fun=cov,
+                                            show_progress_bar=FALSE) {
 
     if (nrow(draws1_mat) != nrow(draws2_mat)) {
         stop("draws1_mat and draws2_mat must have the same number of rows.")
@@ -140,30 +142,49 @@ GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
       function(ind) { (ind - 1) * block_size + 1:block_size })
 
     # Lists of the draws of each block.
-    draws1_blocks <- lapply(
-      1:num_blocks, function(ind) { draws1_mat[block_inds[[ind]], ]} )
-    draws2_blocks <- lapply(
-      1:num_blocks, function(ind) { draws2_mat[block_inds[[ind]], ]} )
+    # draws1_blocks <- lapply(
+    #   1:num_blocks, function(ind) { draws1_mat[block_inds[[ind]], ]} )
+    # draws2_blocks <- lapply(
+    #   1:num_blocks, function(ind) { draws2_mat[block_inds[[ind]], ]} )
+    #
+    # # Bind blocks together according to random block indices.
+    # DrawBlocks <- function(draw_blocks, block_ind_draws) {
+    #     return(do.call(rbind,
+    #                    lapply(block_ind_draws,
+    #                           function(ind) { draw_blocks[[ind]] })))
+    # }
 
-    # Bind blocks together according to random block indices.
-    DrawBlocks <- function(draw_blocks, block_ind_draws) {
-        return(do.call(rbind,
-                       lapply(block_ind_draws,
-                              function(ind) { draw_blocks[[ind]] })))
+    base_result <- cov_fun(draws1_mat, draws2_mat)
+    cov_samples <- array(NA, c(num_draws, nrow(base_result), ncol(base_result)))
+    if (show_progress_bar) {
+      pb <- txtProgressBar(min=1, max=num_draws, style=3)
     }
-
-    cov_samples <- array(NA, c(num_draws, ncol(draws1_mat), ncol(draws2_mat)))
     for (draw in 1:num_draws) {
+        if (show_progress_bar) {
+          setTxtProgressBar(pb, draw)
+        }
         block_ind_draws <- sample(1:num_blocks, num_blocks, replace=TRUE)
+        ind_draws <- do.call(rbind,
+                       lapply(block_ind_draws,
+                              function(ind) { block_inds[[ind]] }))
 
-        draws1_mat_sampled <- DrawBlocks(draws1_blocks, block_ind_draws)
-        draws2_mat_sampled <- DrawBlocks(draws2_blocks, block_ind_draws)
+        #cat("a\n")
+        # draws1_mat_sampled <- DrawBlocks(draws1_blocks, block_ind_draws)
+        # draws2_mat_sampled <- DrawBlocks(draws2_blocks, block_ind_draws)
+        draws1_mat_sampled <- draws1_mat[ind_draws, ]
+        draws2_mat_sampled <- draws2_mat[ind_draws, ]
 
-        cov_samples[draw, , ] <-
-          ComputeIJCovariance(draws1_mat_sampled, draws2_mat_sampled)
+        #cat("b\n")
+        cov_samples[draw, , ] <- cov_fun(draws1_mat_sampled, draws2_mat_sampled)
+        #cat("c\n")
+    }
+    if (show_progress_bar) {
+      close(pb)
     }
 
     cov_se <- sqrt(n_factor) * apply(cov_samples, MARGIN=c(2, 3), sd)
+    rownames(cov_se) <- rownames(base_result)
+    colnames(cov_se) <- colnames(base_result)
 
     return(list(cov_samples=cov_samples, cov_se=cov_se))
 }

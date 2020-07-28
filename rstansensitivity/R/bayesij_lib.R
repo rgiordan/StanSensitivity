@@ -32,5 +32,5 @@ ComputeIJCovariance <- function(loglik_draws_mat, param_draws_mat,
   infl_draws_mat <- num_obs * cov(loglik_draws_mat, param_draws_mat)
   colnames(infl_draws_mat) <- colnames(param_draws_mat)
   ij_cov <- cov(infl_draws_mat, infl_draws_mat)
-  return(draw_ij_cov)
+  return(ij_cov)
 }
