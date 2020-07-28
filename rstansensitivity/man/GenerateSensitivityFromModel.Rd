@@ -5,9 +5,10 @@
 \title{Generate stan models for sensitivity calculations from a model with a
 hyperparameters block.}
 \usage{
-GenerateSensitivityFromModel(base_model_name,
-  python_script = system.file("generate_models.py", package =
-  "rstansensitivity"))
+GenerateSensitivityFromModel(
+  base_model_name,
+  python_script = system.file("generate_models.py", package = "rstansensitivity")
+)
 }
 \arguments{
 \item{base_model_name}{The name of the model with a hyperparameters block,

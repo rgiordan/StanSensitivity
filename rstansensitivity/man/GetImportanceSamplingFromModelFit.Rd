@@ -5,8 +5,13 @@
 \title{Use importance sampling to approximate means at different hyperparameter
 values.  Experimental use only.}
 \usage{
-GetImportanceSamplingFromModelFit(sampling_result, draws_mat,
-  stan_sensitivity_list, imp_sens_par_list, lp_vec = NULL)
+GetImportanceSamplingFromModelFit(
+  sampling_result,
+  draws_mat,
+  stan_sensitivity_list,
+  imp_sens_par_list,
+  lp_vec = NULL
+)
 }
 \description{
 Use importance sampling to approximate means at different hyperparameter

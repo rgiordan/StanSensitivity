@@ -117,8 +117,20 @@ GetSensitivityStandardErrors <- function(
 
 
 
-# Bootstrap the covariance matrices using a block bootstrap on the
-# MCMC chain.
+#' Estimate Monte Carlo standard errors of sample covariances or
+#' covariance-like functions by block bootstrapping the MCMC chain.
+#'
+#' @param draws1_mat One set of parameter draws.
+#' @param draws2_mat Another set of parameter draws.
+#' @param num_blocks The number of blocks in the block bootstrap.
+#' @param num_draws The number of bootstrap draws.
+#' @param cov_fun Optional.  A function of draws1_mat and draws2_mat which
+#' you want to bootstrap.  By default, the covariance is computed.
+#' @param show_progress_par.  Optional.  If TRUE, show a progress bar.
+#' By default, FALSE.
+#' @return A list containing the draws of the output of cov_fun in cov_samples
+#' and the estimated Monte Carlo sample errors in cov_se.
+#' @export
 GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
                                             num_blocks, num_draws,
                                             cov_fun=cov,
@@ -141,19 +153,6 @@ GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
       1:num_blocks,
       function(ind) { (ind - 1) * block_size + 1:block_size })
 
-    # Lists of the draws of each block.
-    # draws1_blocks <- lapply(
-    #   1:num_blocks, function(ind) { draws1_mat[block_inds[[ind]], ]} )
-    # draws2_blocks <- lapply(
-    #   1:num_blocks, function(ind) { draws2_mat[block_inds[[ind]], ]} )
-    #
-    # # Bind blocks together according to random block indices.
-    # DrawBlocks <- function(draw_blocks, block_ind_draws) {
-    #     return(do.call(rbind,
-    #                    lapply(block_ind_draws,
-    #                           function(ind) { draw_blocks[[ind]] })))
-    # }
-
     base_result <- cov_fun(draws1_mat, draws2_mat)
     cov_samples <- array(NA, c(num_draws, nrow(base_result), ncol(base_result)))
     if (show_progress_bar) {
@@ -168,15 +167,10 @@ GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
                        lapply(block_ind_draws,
                               function(ind) { block_inds[[ind]] }))
 
-        #cat("a\n")
-        # draws1_mat_sampled <- DrawBlocks(draws1_blocks, block_ind_draws)
-        # draws2_mat_sampled <- DrawBlocks(draws2_blocks, block_ind_draws)
         draws1_mat_sampled <- draws1_mat[ind_draws, ]
         draws2_mat_sampled <- draws2_mat[ind_draws, ]
 
-        #cat("b\n")
         cov_samples[draw, , ] <- cov_fun(draws1_mat_sampled, draws2_mat_sampled)
-        #cat("c\n")
     }
     if (show_progress_bar) {
       close(pb)

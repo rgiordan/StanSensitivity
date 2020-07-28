@@ -5,9 +5,17 @@
 \title{Check whether two stan models objects agree on draws in
 \code{sampling_result}.}
 \usage{
-CheckModelEquivalence(sampling_result, model_1, model_2, stan_data_1,
-  stan_data_2, check_grads = TRUE, tol = 1e-08, max_chains = 1,
-  max_num_samples = 100)
+CheckModelEquivalence(
+  sampling_result,
+  model_1,
+  model_2,
+  stan_data_1,
+  stan_data_2,
+  check_grads = TRUE,
+  tol = 1e-08,
+  max_chains = 1,
+  max_num_samples = 100
+)
 }
 \arguments{
 \item{sampling_result}{Samples drawn from a Stan model, possibly distinct

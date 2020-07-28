@@ -6,11 +6,14 @@ library(sandwich)
 context("rstansensitivity")
 
 
-TestIJ <- function(misspecified) {
+TestIJ <- function(misspecified, grouped) {
     set.seed(42)
-    num_sims <- 5000
+    num_sims <- 3000
     x1 <- rnorm(num_sims)
     x2 <- rnorm(num_sims)
+    if (grouped) {
+        z <- sample(floor(num_sims / 10), replace=TRUE, size=num_sims)
+    }
     sigma2 <- 3 * (x1^2 + x2^2)
     
     if (misspecified) {
@@ -27,6 +30,9 @@ TestIJ <- function(misspecified) {
     bayes_cov <- cov(param_draws, param_draws)
     
     loglik_draws <- log_lik(rstan_fit)
+    if (grouped) {
+        loglik_draws <- GroupLogLikelihoodDraws(loglik_draws, z)
+    }
     ij_cov <- ComputeIJCovariance(loglik_draws, param_draws)
     
     GetBayesIJDifference <- function(loglik_draws, param_draws) {
@@ -58,15 +64,17 @@ TestIJ <- function(misspecified) {
     lm_cov <- sandwich::vcovHC(lm_fit)
     lm_pars <- c("(Intercept)", "x1", "x2")
     
-    num_sims * lm_cov
+    ncol(loglik_draws) * lm_cov
     ij_cov[lm_pars, lm_pars]
-    lm_err <- num_sims * lm_cov - ij_cov[lm_pars, lm_pars]
+    lm_err <- ncol(loglik_draws) * lm_cov - ij_cov[lm_pars, lm_pars]
     z_score <- lm_err / ij_se_list$cov_se[lm_pars, lm_pars]
     expect_true(max(abs(z_score)) < 2.5)
 }
 
 
 test_that("ij_works", {
-    TestIJ(TRUE)
-    TestIJ(FALSE)
+    #misspecified <- TRUE; grouped <- TRUE
+    TestIJ(misspecified=TRUE, grouped=TRUE)
+    TestIJ(misspecified=FALSE, grouped=FALSE)
+    TestIJ(misspecified=TRUE, grouped=FALSE)
 })

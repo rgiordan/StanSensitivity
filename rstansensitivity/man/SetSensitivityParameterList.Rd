@@ -8,15 +8,11 @@ be passed to a sensitivity model fit object.}
 SetSensitivityParameterList(model_sens_params, model_params, stan_data)
 }
 \arguments{
-\item{model_sens_params}{A stanfit object with the sensitivity model
-parameters.  In order to guarantee legal initial values, it may be
-preferable to use an empty model block.}
+\item{model_sens_params}{A stanfit object for the original model.}
 
 \item{stan_data}{The stan data list for the original model with
 hyperparameters specified for reading in the data block.  Each hyperparameter
 in the model_sens_params stanfit model must be specified in \code{stan_data}.}
-
-\item{model_sens_params}{A stanfit object for the original model.}
 }
 \value{
 A list of valid model parameters than can be passed to the

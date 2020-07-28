@@ -7,8 +7,12 @@ a normal approximation and the delta method.  These standard errors are
 based on what may be unrealistic assumptions, and should be interpreted with
 caution.}
 \usage{
-GetSensitivityStandardErrors(draws_mat, grad_mat, fix_mean = FALSE,
-  normalized = FALSE)
+GetSensitivityStandardErrors(
+  draws_mat,
+  grad_mat,
+  fix_mean = FALSE,
+  normalized = FALSE
+)
 }
 \arguments{
 \item{draws_mat}{Parameter draws from \code{GetStanSensitivityFromModelFit}.}

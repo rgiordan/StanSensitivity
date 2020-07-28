@@ -5,8 +5,10 @@
 \title{Convert a Stan sampling result to a form that can be joined with tidy
 sensitivity results.}
 \usage{
-GetMCMCDataFrame(sampling_result, cols = c("mean", "se_mean", "sd", "n_eff",
-  "Rhat"))
+GetMCMCDataFrame(
+  sampling_result,
+  cols = c("mean", "se_mean", "sd", "n_eff", "Rhat")
+)
 }
 \arguments{
 \item{sampling_result}{The output of \code{stan::sampling}}
