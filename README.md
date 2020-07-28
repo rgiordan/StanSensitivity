@@ -4,30 +4,30 @@ This package contains tools that allow users
 to automatically generate local sensitivity measures to hyperparameters in
 [Stan](http://mc-stan.org/) using the [RStan](http://mc-stan.org/interfaces/rstan.html) interface.
 
-In Bayesian analysis, priors and likelihoods typically have hyperparameters that are fixed by the modeler. Naturally,
-posterior expectations of parameters are functions of these hyperparameters.  If a range of hyperparameters are plausible, one hopes
-that the posterior expectations don't depend too strongly on the
-particular values of the hyperparameters.  A model and dataset
-is called "robust" when relevant posterior expectations don't vary
-meaningfully as the hyperparameters vary over their plausible values.
+In Bayesian analysis, priors and likelihoods typically have hyperparameters that
+are fixed by the modeler. Naturally, posterior expectations of parameters are
+functions of these hyperparameters.  If a range of hyperparameters are
+plausible, one hopes that the posterior expectations don't depend too strongly
+on the particular values of the hyperparameters.  A model and dataset is called
+"robust" when relevant posterior expectations don't vary meaningfully as the
+hyperparameters vary over their plausible values.
 
-For example, in the `normal_censored`
-stan example, the likelihood has a fixed value of `y_var=1`.
-If we aren't sure that `y_var` should be
-exactly `1`, we might hope that the expectation of the parameter `mu`
-doesn't depend too strongly on the precise value of `y_var`.
-Here is a graph of the actual dependence (in blue):
+For example, in the `normal_censored` stan example, the likelihood has a fixed
+value of `y_var=1`. If we aren't sure that `y_var` should be exactly `1`, we
+might hope that the expectation of the parameter `mu` doesn't depend too
+strongly on the precise value of `y_var`. Here is a graph of the actual
+dependence (in blue):
 
 ![Sensitivity graph](docs/IllustrativeGraph-1.png)
 
-Evaluating the exact dependence of posterior expectations on the hyperparameters typically requires re-fitting the model many times,
-which can be expensive.  That is what we did to form the above graph.
-However, it is possible to form a linear
-approximation to the dependence (shown in red above)
-using only samples at a fixed value of the hyperparameters [1,2,3].  Our package, `rstansensitivity`, estimates this linear approximation.
-It only needs draws from the posterior at one fixed value of the
-hyperparameters (alpha naught in the figure, which corresponds to
-`y_var=1` in the example).
+Evaluating the exact dependence of posterior expectations on the hyperparameters
+typically requires re-fitting the model many times, which can be expensive.
+That is what we did to form the above graph. However, it is possible to form a
+linear approximation to the dependence (shown in red above) using only samples
+at a fixed value of the hyperparameters [1,2,3].  Our package,
+`rstansensitivity`, estimates this linear approximation. It only needs draws
+from the posterior at one fixed value of the hyperparameters (alpha naught in
+the figure, which corresponds to `y_var=1` in the example).
 
 ## Some caveats
 
@@ -222,6 +222,86 @@ the expectation to change by unacceptably large amounts.
 In the figure "Negative binomial example" above, suppose we had decided that `cauchy_loc_alpha` might vary from -4 to 4, and that a change of any parameter greater than one posterior standard deviation would be a problem.  This would occur if any parameter had a normalized sensitivity greater than in absolute value than 1 / 4 = 0.25.  However, the most sensitive parameter to `cauchy_loc_alpha` is `alpha`, and its normalized sensitivity is very likely less than 0.05 in magnitude.  So we would decide that sensitivity to `cauchy_loc_alpha` is not a problem -- as long as we believe that the dependence of all the expectations are linear in `cauchy_loc_alpha` between -4 and 4.
 
 For a more in-depth discussion of the relationship between sensitivity and robustness, see Appendix C of our paper [3].
+
+# Infinitesimal jackknife
+
+We also provide some helper functions for the Bayesian infinitesimal jackknife
+(IJ).  Formally the IJ corresponds to assigning data weights and forming
+a linear approximation to the depdendence of a posterior expectation on these
+weights as above.  Since the log likelihood is linear in the weights,
+the partial derivative of the log joint distribution with respect to the
+weights is simply the log likelihood itself.  It is typically easier to
+simply evaluate this log likelihood directly rather than use our framework
+to compute these derivatives.
+
+An example use case is estimating the frequentist covariance of a posterior
+expectation to check for misspecification.  We will demonstrate
+the idea with the following example, taken from the unit test
+`test_ij.R`.  Let's generate some heteroskedastic regression data and fit
+it with an `rstanarm` model that assumes homoskedasticity.
+
+```
+library(rstansensitivity)
+library(rstanarm)
+library(sandwich)
+
+num_sims <- 2000
+x1 <- rnorm(num_sims)
+x2 <- rnorm(num_sims)
+sigma2 <- 3 * (x1^2 + x2^2)
+eps <- rnorm(num_sims, sd=sqrt(sigma2))
+df <- data.frame(y=eps, x1=x1, x2=x2)
+
+rstan_fit <- rstanarm::stan_glm(y ~ 1 + x1 + x2, df, family=gaussian())
+param_draws <- as.matrix(rstan_fit, pars=c("x1", "x2"))
+bayes_cov <- cov(param_draws, param_draws)
+```
+
+Since the model is misspecified, we expect the frequentist variance of
+the expectation of the regression coefficients to be different from the
+posterior variance of the same coefficients.  Let's check that with the
+IJ covariance.
+
+```
+loglik_draws <- log_lik(rstan_fit)
+ij_cov <- ComputeIJCovariance(loglik_draws, param_draws)
+
+print(ij_cov)
+#             x1          x2
+# x1 10.71141060  0.08694545
+# x2  0.08694545 10.19563723
+
+print(num_sims * bayes_cov)
+#             x1          x2
+# x1 5.655012898 0.007550377
+# x2 0.007550377 5.625837549
+```
+
+The IJ covariance, which is a consistent estimator of the frequentist
+covariance of the posterior expectations, differs from the Bayesian
+posterior covariance due to the misspecification.
+
+To compute Monte Carlo standard errors of the IJ covariance, we can
+use `GetBlockBootstrapStandardErrors`.
+
+```
+ij_se_list <- GetBlockBootstrapStandardErrors(
+    loglik_draws, param_draws, num_blocks=100, num_draws=50,
+    cov_fun=ComputeIJCovariance,
+    show_progress_bar=TRUE)
+```
+
+Then `ij_se_list$cov_se` contains element-wise estimates of the Monte Carlo
+standard errors of `ij_cov`.
+
+At this time, we do not recommend formally using Monte Carlo standard
+errors to test whether the Bayesian covariance and IJ covariance are equal,
+since the two can easily differ by more than the Monte Carlo standard error
+even when the model is correctly specified and the amount of data is quite
+large.  Rather, we recommend looking at the relative magnitude of the
+implied variances and covariances.  If the IJ covariance is different
+from the Bayes covariance by an amount that is practically relevant, and
+not just statistically significant, then you might worry about misspecification.
 
 # References
 

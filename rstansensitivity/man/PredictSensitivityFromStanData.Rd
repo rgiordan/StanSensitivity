@@ -5,8 +5,13 @@
 \title{Use the linear approximation to predict the sensitivity to a new
 stan data list.}
 \usage{
-PredictSensitivityFromStanData(stan_sensitivity_list, sens_result, stan_data,
-  stan_data_perturb, description = "perturbation")
+PredictSensitivityFromStanData(
+  stan_sensitivity_list,
+  sens_result,
+  stan_data,
+  stan_data_perturb,
+  description = "perturbation"
+)
 }
 \arguments{
 \item{stan_sensitivity_list}{The output of \code{GetStanSensitivityModel}}

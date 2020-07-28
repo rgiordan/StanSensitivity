@@ -2,11 +2,7 @@ library(rstan)
 library(dplyr)
 library(reshape2)
 
-
-# Just a more readable shortcut for the Stan attribute.
-GetParamNames <- function(model_fit) {
-    model_fit@.MISC$stan_fit_instance$unconstrained_param_names(FALSE, FALSE)
-}
+#source("./stan_utils_lib.R")
 
 #' Get the filename of the stan model to be used for sampling.
 #'
@@ -24,6 +20,7 @@ GetParamNames <- function(model_fit) {
 GetSamplingModelFilename <- function(model_name) {
     return(paste(model_name, "_generated.stan", sep=""))
 }
+
 
 #' Generate stan models for sensitivity calculations from a model with a
 #' hyperparameters block.
@@ -118,9 +115,12 @@ GetStanSensitivityModel <- function(model_name, stan_data) {
 
     # This is the stan fit object that we will use to evaluate the gradient
     # of the log probability at the MCMC draws.
-    model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
-                           data=stan_data, algorithm="Fixed_param",
-                           iter=1, chains=1, init=list(sens_par_list))
+    # model_sens_fit <- stan(paste(model_name, "_sensitivity.stan", sep=""),
+    #                        data=stan_data, algorithm="Fixed_param",
+    #                        iter=1, chains=1, init=list(sens_par_list))
+    model_sens_fit <-
+      GetDummyStanfit(model=paste0(model_name, "_sensitivity.stan"),
+                      data=stan_data, init=list(sens_par_list))
 
     # These names help sort through the vectors of sensitivity.
     param_names <- GetParamNames(model_params)
