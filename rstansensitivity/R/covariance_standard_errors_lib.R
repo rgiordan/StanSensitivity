@@ -11,6 +11,7 @@ mcse.multi_safe <- function(arg_draws) {
 }
 
 
+#' @export
 GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
   x_mean <- mean(x_draws)
   y_mean <- mean(y_draws)
