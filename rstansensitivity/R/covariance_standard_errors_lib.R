@@ -11,6 +11,7 @@ mcse.multi_safe <- function(arg_draws) {
 }
 
 
+#' @export
 GetCovarianceSE <- function(x_draws, y_draws, fix_mean=FALSE) {
   x_mean <- mean(x_draws)
   y_mean <- mean(y_draws)
@@ -65,6 +66,7 @@ GetNormalizedCovariance <- function(par) {
 }
 
 
+#' @export
 GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
   par_draws <- PackNormalizedCovariancePar(x_draws, y_draws)
   par_cov_mat <- mcse.multi_safe(par_draws)

@@ -312,6 +312,7 @@ EvaluateAtDraws <- function(
 
 # extract() returns an array of samples x chain x parameter.  Stack them
 # by chain into a single matrix of (samples * chains) x parameter.
+#' @export
 StackChainArray <- function(draws_array) {
     num_chains <- dim(draws_array)[2]
     draws_mat <- do.call(
