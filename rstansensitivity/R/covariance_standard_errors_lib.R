@@ -66,6 +66,7 @@ GetNormalizedCovariance <- function(par) {
 }
 
 
+#' @export
 GetNormalizedCovarianceSE <- function(x_draws, y_draws) {
   par_draws <- PackNormalizedCovariancePar(x_draws, y_draws)
   par_cov_mat <- mcse.multi_safe(par_draws)
