@@ -169,8 +169,8 @@ GetBlockBootstrapStandardErrors <- function(draws1_mat, draws2_mat,
                        lapply(block_ind_draws,
                               function(ind) { block_inds[[ind]] }))
 
-        draws1_mat_sampled <- draws1_mat[ind_draws, ]
-        draws2_mat_sampled <- draws2_mat[ind_draws, ]
+        draws1_mat_sampled <- draws1_mat[ind_draws, , drop=FALSE]
+        draws2_mat_sampled <- draws2_mat[ind_draws, , drop=FALSE]
 
         cov_samples[draw, , ] <- cov_fun(draws1_mat_sampled, draws2_mat_sampled)
     }
